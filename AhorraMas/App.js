@@ -1,10 +1,12 @@
-import PaginaPrincipal from "./Screens/PaginaPrincipal";
+import PrincipalScreen from "./Screens/PrincipalScreen.js";
+import LoginScreen from "./Screens/LogInScreen.js";
 
 export default function App() {
 
   return (
 
-    <PaginaPrincipal/>
+    <LoginScreen/>
+    //<PrincipalScreen/>
 
   );
 }

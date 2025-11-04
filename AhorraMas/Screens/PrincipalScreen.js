@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 
-export default function PaginaPrincipal() {
+export default function PrincipalScreen() {
   return (
 
     <View style={styles.container}>
@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     alignItems: 'center',
-    backgroundColor: '#2a3fffff',
+    backgroundColor: '#0f1344',
     width: '100%',
     padding: 20,
     borderTopLeftRadius: 15,
