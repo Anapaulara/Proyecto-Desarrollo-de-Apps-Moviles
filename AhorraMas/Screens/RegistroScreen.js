@@ -26,7 +26,7 @@ export default function RegistroScreen() {
       mostrarAlerta('Error', 'Por favor, completa todos los campos.');
       return;
     }
-    mostrarAlerta('Registro exitoso', `Bienvenido/a ${nombre} ${apellido} 🎉`);
+    mostrarAlerta('Registro exitoso', `Bienvenido/a ${nombre} ${apellido} `);
   };
 
   return (
