@@ -165,6 +165,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around', 
     alignItems: 'center',
     borderTopLeftRadius: 10, 
+<<<<<<< HEAD
     borderTopRightRadius:10
   },
 });
+=======
+    borderTopRightRadius: 10
+  },
+});
+>>>>>>> 2c788780edf3722035628bf7c6dffa1f255d0916
