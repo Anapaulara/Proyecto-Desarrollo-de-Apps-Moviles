@@ -75,7 +75,6 @@ export default function RegistroScreen() {
           <Text style={styles.cancelText}>Cancelar</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.saveBtn} onPress={() => alert("Guardado ✅")}>
         <TouchableOpacity style={styles.saveBtn} onPress={() => Alert.alert("Guardado")}>
           <Text style={styles.saveText}>Guardar</Text>
         </TouchableOpacity>
