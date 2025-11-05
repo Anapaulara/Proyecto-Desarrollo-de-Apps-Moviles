@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert, Scro
 
 const logo = require('../assets/Images/logoo.png');
 
-export default function RegistroAhorraApp() {
+export default function RegistroScreen() {
   const [nombre, setNombre] = useState('');
   const [apellido, setApellido] = useState('');
   const [dia, setDia] = useState('');

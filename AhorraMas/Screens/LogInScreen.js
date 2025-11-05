@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Pressable , View, Text, StyleSheet, TextInput, Switch, Button, Alert } from 'react-native';
 import PrincipalScreen from './PrincipalScreen';
+import RegistroAhorraApp from './RegistroScreen';
+
 
 export default function LoginScreen() {
   const [contrasena, setContrasena] = useState('');

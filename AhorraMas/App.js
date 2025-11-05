@@ -1,16 +1,27 @@
-import PrincipalScreen from "./Screens/PrincipalScreen.js";
+import React, { useState } from "react";
+import PresupuestoScreen from "./Screens/PresupuestoScreen.js";
+import RegistroScreen from "./Screens/RegistroScreen.js";
 import LoginScreen from "./Screens/LogInScreen.js";
-import RegistroAhorraApp from "./Screens/Registro.js";
-import PerfilyConfiguraciones from "./Screens/PerfilyConfiguraciones.js";
+import PrincipalScreen from "./Screens/PrincipalScreen.js";
+import PerfilyConfiguraciones from "./Screens/PerfilScreen.js";
 
 export default function App() {
+  const [pantalla, setPantalla] = useState("Presupuesto");
 
   return (
+    <>
 
-    //<LoginScreen/>
-    //<PrincipalScreen/>
-    //<RegistroAhorraApp/>
-    <PerfilyConfiguraciones />
+      {pantalla === "Presupuesto" && (
+        <PresupuestoScreen cambiarPantalla={setPantalla} />
+      )}
 
-  );
+      {pantalla === "Registro" && (
+        <RegistroScreen cambiarPantalla={setPantalla} />
+      )}
+
+      {pantalla === "Login" && <LoginScreen cambiarPantalla={setPantalla} />}
+      {pantalla === "Principal" && <PrincipalScreen cambiarPantalla={setPantalla} />} 
+      {pantalla === "Perfil" && <PerfilyConfiguraciones cambiarPantalla={setPantalla} />}
+      </>
+      );
 }

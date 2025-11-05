@@ -1,7 +1,15 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import PerfilScreen from './PerfilScreen';
+
 
 export default function PrincipalScreen() {
+  const [mostrarPerfil, setMostrarPerfil] = React.useState(false);
+
+  if (mostrarPerfil) {
+  return <PerfilScreen />;
+}
+
   return (
 
     <View style={styles.container}>
@@ -67,12 +75,12 @@ export default function PrincipalScreen() {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.button}
-          onPress={() => alert('¡Botón Perfil!')}
+          onPress={() => setMostrarPerfil(true)}
         >
-          <Image
-            source={require('../assets/Images/UsuarioIcon.png')} 
-            style={styles.icon}
-          />
+        <Image
+          source={require('../assets/Images/UsuarioIcon.png')} 
+          style={styles.icon}
+        />
         </TouchableOpacity>
       </View>
     </View>

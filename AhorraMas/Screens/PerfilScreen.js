@@ -1,12 +1,11 @@
 import React from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from "react-native";
-import { Ionicons, MaterialIcons, Feather, FontAwesome5 } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons, Feather, FontAwesome5 } from "@expo/vector-icons"; {/*iconos*/}
 
-export default function PrincipalScreen() {
+export default function PerfilScreen() {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Encabezado */}
         <View style={styles.header}>
           <Image source={require("../assets/Images/logoo.png")} style={styles.logo} />
           <View style={styles.userInfo}>
@@ -14,12 +13,11 @@ export default function PrincipalScreen() {
               source={require("../assets/Images/UsuarioIcon.png")}
               style={styles.profilePic}
             />
-            <Text style={styles.userName}>Ivan Isay Guerra Lopez</Text>
-            <Text style={styles.userEmail}>Ivan_Isay@upq.edu.mx</Text>
+            <Text style={styles.userName}>Paulina Lara</Text>
+            <Text style={styles.userEmail}>124048816@upq.edu.mx</Text>
           </View>
         </View>
  
-        {/* Opciones */}
         <View style={styles.options}>
           <TouchableOpacity style={styles.option}>
             <Ionicons name="person-outline" size={22} color="#000033" />
@@ -47,14 +45,12 @@ export default function PrincipalScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Cerrar sesión */}
         <TouchableOpacity style={styles.logout}>
           <Ionicons name="log-out-outline" size={22} color="#000033" />
           <Text style={styles.logoutText}>Cerrar sesión</Text>
         </TouchableOpacity>
       </ScrollView>
 
-      {/* Barra inferior */}
       <View style={styles.bottomBar}>
         <TouchableOpacity>
           <Ionicons name="home-outline" size={26} color="black" />
