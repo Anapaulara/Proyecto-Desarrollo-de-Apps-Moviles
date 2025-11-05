@@ -208,4 +208,5 @@ const styles = StyleSheet.create({
     marginTop: 15,
     fontSize: 14,
   },
-});
+}
+);
