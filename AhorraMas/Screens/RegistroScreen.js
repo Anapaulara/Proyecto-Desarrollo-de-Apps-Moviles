@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Alert } from "react-native";
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 
@@ -75,6 +76,7 @@ export default function RegistroScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.saveBtn} onPress={() => alert("Guardado ✅")}>
+        <TouchableOpacity style={styles.saveBtn} onPress={() => Alert.alert("Guardado")}>
           <Text style={styles.saveText}>Guardar</Text>
         </TouchableOpacity>
       </View>
