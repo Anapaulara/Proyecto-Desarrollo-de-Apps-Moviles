@@ -1,9 +1,25 @@
-import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import PerfilScreen from './PerfilScreen';
-
+import Graficas from './GraficasScreen';
+import reg from './RegScreens';
+import React from 'react';
 
 export default function PrincipalScreen() {
+      const [mostrarPerfil, setMostrarPerfil] = React.useState(false);
+    const [mostrarGrafica, setMostrarGrafica] = React.useState(false);
+    const [mostrarreg, setMostrarreg] = React.useState(false);
+
+  if (mostrarPerfil) {
+  return <PerfilScreen />;
+}
+if (mostrarGrafica) {
+  return <Graficas />;
+}
+if (mostrarreg) {
+  return <Graficas />;
+}
+
+
   return (
 
     <View style={styles.container}>
@@ -42,7 +58,7 @@ export default function PrincipalScreen() {
       <View style={styles.pie}>
         <TouchableOpacity
           style={styles.button}
-          onPress={() => alert('¡Botón Casa!')}
+          onPress={() => alert('¡Estas en Casa!')}
         >
           <Image
             source={require('../assets/Images/HouseIcon.png')} 
@@ -51,7 +67,7 @@ export default function PrincipalScreen() {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.button}
-          onPress={() => alert('¡Botón Registro!')}
+          onPress={() => setMostrarreg(true)}
         >
           <Image
             source={require('../assets/Images/RegistroIcon.png')} 
@@ -60,7 +76,7 @@ export default function PrincipalScreen() {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.button}
-          onPress={() => alert('¡Botón Graficas!')}
+          onPress={() => setMostrarGrafica(true)}
         >
           <Image
             source={require('../assets/Images/GraficaIcon.png')} 

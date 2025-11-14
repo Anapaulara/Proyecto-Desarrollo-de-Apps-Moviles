@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Pressable , View, Text, StyleSheet, TextInput, Switch, Button, Alert } from 'react-native';
 import PrincipalScreen from './PrincipalScreen';
+import SignInScreen from './SignInScreen';
 
-export default function LoginScreen() {
+export default function LogInScreen() {
   const [contrasena, setContrasena] = useState('');
   const [mail, setMail] = useState('');
   const [aceptaTerminos, setAceptaTerminos] = useState(false);
-
+  const [SignIn, setSignIn] = useState(false);
+  const [showPrincipal, setShowPrincipal] = useState(false);
 
   const mostrarAlerta = () => {
     if (mail.trim() === '' || contrasena.trim() === '') {
@@ -31,12 +33,17 @@ export default function LoginScreen() {
       return;
     }
 
-    setMostrarPrincipal(true);
+ setShowPrincipal(true);
+      
   };
 
-  if (mostrarPrincipal) {
-    return <PrincipalScreen />;
-  }
+  if (SignIn) {
+        return <SignInScreen/>;
+      }
+
+ if (showPrincipal) {
+  return <PrincipalScreen />;
+}
 
   return (
     <View style={styles.container}>
@@ -90,7 +97,7 @@ export default function LoginScreen() {
 
       <View style={styles.switchRow}>
           <Text style={styles.splashSubtitle}>No tienes una cuenta?</Text>
-         <Button title="Registrate" color="#1a26aaff" />
+         <Button title="Registrate" color="#1a26aaff" onPress={()=>setSignIn(true)}/>
         </View>
 
       <View style={styles.pie}></View>

@@ -1,15 +1,23 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
+import PerfilScreen from './PerfilScreen';
 
-export default function PresupuestoScreen({ cambiarPantalla }) {
+export default function PresupuestoScreen() {
+    const [mostrarPerfil, setMostrarPerfil] = React.useState(false);
+
+    if (mostrarPerfil) {
+      return <PerfilScreen />;
+    }
 
   return (
     <View style={styles.container}>
       {/* Encabezado */}
       <View style={styles.header}>
+        <TouchableOpacity style={styles.option} onPress={() => setMostrarPerfil(true)}>
         <Ionicons name="arrow-back" size={24} color="#0f1530" />
-        <Text style={styles.logoText}>Ahorr<Text style={{ color: '#2A7CF7' }}>a+</Text> App</Text>
+        </TouchableOpacity>
+        <Text style={styles.logoText}>Ahorra<Text style={{ color: '#2A7CF7' }}>+</Text> App</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
