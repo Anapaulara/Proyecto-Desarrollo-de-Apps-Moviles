@@ -1,14 +1,39 @@
 import React, { useState } from 'react';
-import { Pressable , View, Text, StyleSheet, TextInput, Switch, Button, Alert } from 'react-native';
+import { Pressable , View, Text, StyleSheet, TextInput, Button, Alert, Modal, TouchableOpacity } from 'react-native';
 import PrincipalScreen from './PrincipalScreen';
 import SignInScreen from './SignInScreen';
 
 export default function LogInScreen() {
   const [contrasena, setContrasena] = useState('');
   const [mail, setMail] = useState('');
-  const [aceptaTerminos, setAceptaTerminos] = useState(false);
   const [SignIn, setSignIn] = useState(false);
   const [showPrincipal, setShowPrincipal] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [NewPassword, SetNewPassword] = useState('');
+  const [CNewPassword, setCNewPassword] = useState('');
+const botonGuardar = () => {
+        if (!NewPassword || !CNewPassword) {
+            Alert.alert('Error', 'Por favor completa todos los campos');
+            return;
+        }
+
+        if (NewPassword !== CNewPassword) {
+            Alert.alert('Error', 'Las contraseñas no coinciden');
+            return;
+        }
+
+        const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
+        if (!passwordRegex.test(NewPassword)) {
+        Alert.alert("Error", "La contraseña debe tener al menos 8 caracteres, una mayúscula y un número.");
+        return;
+    }
+
+    setModalVisible(false);
+  SetNewPassword('');
+  setCNewPassword('');
+    };
+  const botonCerrar = () => {setModalVisible(false); SetNewPassword(''); setCNewPassword('');};
+
 
   const mostrarAlerta = () => {
     if (mail.trim() === '' || contrasena.trim() === '') {
@@ -25,11 +50,6 @@ export default function LogInScreen() {
     const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
     if (!passwordRegex.test(contrasena)) {
       Alert.alert("Error", "La contraseña debe tener al menos 8 caracteres, una mayúscula y un número.");
-      return;
-    }
-
-    if (!aceptaTerminos) {
-      Alert.alert("Error", "Debes aceptar los términos y condiciones.");
       return;
     }
 
@@ -72,14 +92,6 @@ export default function LogInScreen() {
           value={contrasena}
           onChangeText={setContrasena}
         />
-
-        <View style={styles.switchRow}>
-          <Text style={styles.splashSubtitle}>Acepto los términos y condiciones</Text>
-          <Switch
-            onValueChange={setAceptaTerminos}
-            value={aceptaTerminos}
-          />
-        </View>
       </View>
 
       <View style={styles.button}>
@@ -87,13 +99,43 @@ export default function LogInScreen() {
         </View>
 
         <Pressable
-            onPress={() => alert('¡Recuperar Contraseña!')}
+            onPress={() => setModalVisible(true)}
             style={({ pressed }) => [
             { opacity: pressed ? 0.5 : 1, }, ]} >
   <Text style={{ color: 'blue',  fontSize: 18, padding: 10, }}>
     No recuerdas tu contraseña?
   </Text>
 </Pressable>
+
+    <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={botonCerrar}>
+        
+        <View style={styles.modalContenedor}>
+          
+          <View style={styles.modalVista}>
+            
+            <Text style={styles.modalTitulo}>Renovar contraseña</Text>
+
+            <TextInput style={styles.modalInput} placeholder="Escribe tu Contraseña nueva" placeholderTextColor="#888" value={NewPassword} onChangeText= {SetNewPassword}/>
+            <TextInput style={styles.modalInput} placeholder="Confirmar contraseña" placeholderTextColor="#888" value={CNewPassword} onChangeText={setCNewPassword}/>
+
+            <View style={styles.modalBotones}>
+              
+              <TouchableOpacity style={[styles.botonBase, styles.botonCancelar]} onPress={botonCerrar}>
+                <Text style={styles.botonCancelarTexto}>Cancelar</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={[styles.botonBase, styles.botonGuardar]} onPress={botonGuardar}>
+                <Text style={styles.botonGuardarTexto}>Guardar</Text>
+              </TouchableOpacity>
+
+            </View>
+
+          </View>
+
+        </View>
+
+      </Modal>
+
 
       <View style={styles.switchRow}>
           <Text style={styles.splashSubtitle}>No tienes una cuenta?</Text>
@@ -177,5 +219,95 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 15,
     borderRadius: 8,
+  },
+  modalContenedor: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)', 
+  },
+  modalVista: {
+    width: '90%',
+    backgroundColor: 'white',
+    borderRadius: 20, 
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 5,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalTitulo: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 24, 
+    color: '#1F2937', 
+  },
+  modalInput: {
+    width: '100%',
+    height: 50,
+    borderColor: '#E5E7EB', 
+    borderWidth: 1,
+    borderRadius: 10, 
+    paddingHorizontal: 15,
+    marginBottom: 20, 
+    backgroundColor: '#F9FAFB', 
+    color: '#1F2937', 
+    fontSize: 16,
+  },
+  switchContenedor: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+    width: '100%',
+  },
+  switchTexto: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginHorizontal: 12,
+    color: '#6B7280',
+  },
+  switchTextoActivoVerde: {
+    color: '#22C55E',
+    fontWeight: 'bold',
+  },
+  switchTextoActivoRojo: {
+    color: '#EF4444',
+    fontWeight: 'bold',
+  },
+  modalBotones: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  botonBase: {
+    flex: 1, 
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginHorizontal: 6, 
+  },
+  botonGuardar: {
+    backgroundColor: '#007AFF',
+  },
+  botonGuardarTexto: {
+    color: '#FFFFFF', 
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  botonCancelar: {
+    backgroundColor: '#F3F4F6', 
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  botonCancelarTexto: {
+    color: '#374151', 
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert, ScrollView, Platform, Pressable } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert, ScrollView, Platform, Pressable, Switch } from 'react-native';
 import PrincipalScreen from './PrincipalScreen';
 
 const logo = require('../assets/Images/logoo.png');
@@ -14,6 +14,7 @@ export default function SignInScreen() {
   const [correo, setCorreo] = useState('');
   const [password, setPassword] = useState('');
   const [showPrincipal, setShowPrincipal] = useState(false);
+  const [aceptaTerminos, setAceptaTerminos] = useState(false);
 
   const mostrarAlerta = (titulo, mensaje) => {
     if (Platform.OS === 'web') {
@@ -21,6 +22,12 @@ export default function SignInScreen() {
     } else {
       Alert.alert(titulo, mensaje);
     }
+
+    if (!aceptaTerminos) {
+          Alert.alert("Error", "Debes aceptar los términos y condiciones.");
+          return;
+        }
+
      setShowPrincipal(true);
   };
 
@@ -98,6 +105,14 @@ export default function SignInScreen() {
           onChangeText={setPassword}
         />
 
+        <View style={styles.switchRow}>
+                  <Text style={styles.splashSubtitle}>Acepto los términos y condiciones</Text>
+                  <Switch
+                    onValueChange={setAceptaTerminos}
+                    value={aceptaTerminos}
+                  />
+                </View>
+
         <TouchableOpacity style={styles.boton} onPress={registrar}>
           <Text style={styles.textoBoton}>Registrarte</Text>
         </TouchableOpacity>
@@ -113,6 +128,19 @@ export default function SignInScreen() {
     flexGrow: 1,
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
+  },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    justifyContent: 'space-evenly',
+    width: '100%',
+    borderRadius: 8,
+    marginBottom: 15,
+  },
+  splashSubtitle: {
+    color: '#333',
+    marginTop: 8,
   },
   container: {
     flex: 1,
