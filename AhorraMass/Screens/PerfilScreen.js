@@ -1,12 +1,42 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Modal, Alert, TextInput } from "react-native";
 import { Ionicons, MaterialIcons, Feather, FontAwesome5 } from "@expo/vector-icons";
+import GlobalStyles from '../Styles/GlobalStyles';
 import LogInScreen from "./LogInScreen";
 import PresupuestoScreen from "./PresupuestoScreen";
 
 export default function PerfilScreen() {
   const [cerrarSesion, setCerrarSesion] = useState(false);
   const [presupuesto, setpresupuesto] = useState(false);
+  const [editarPerfil, setEditarPerfil] = useState(false);
+  const [nombreUsuario, setNombreUsuario] = useState("Paulina");
+  const [ApellidoUsuario, setApellidoUsuario] = useState("Lara");
+  const [NewUsername, SetNewUsername] = useState('');
+  const [NewLastname, SetNewLastname] = useState('');
+
+  const botonGuardar = () => {
+  if (!NewUsername) {
+      Alert.alert('Error', 'Por favor completa todos los campos');
+      return;
+  }
+
+  if (NewUsername === nombreUsuario) {
+      Alert.alert('Error', 'El nuevo nombre debe ser diferente al actual');
+      return;
+  }
+
+  if (NewUsername.length < 3 || NewUsername.length > 20) {
+      Alert.alert('Error', 'El nombre de usuario debe tener al menos 3 caracteres y máximo 20');
+      return;
+  }
+
+  setApellidoUsuario(NewLastname);
+  setNombreUsuario(NewUsername);
+  setEditarPerfil(false);
+  SetNewUsername('');
+  SetNewLastname('')
+};
+    const botonCerrar = () => {setEditarPerfil(false); SetNewUsername('');};
 
   if (cerrarSesion) {
     return <LogInScreen />;
@@ -25,13 +55,13 @@ export default function PerfilScreen() {
               source={require("../assets/Images/UsuarioIcon.png")}
               style={styles.profilePic}
             />
-            <Text style={styles.userName}>Paulina Lara</Text>
-            <Text style={styles.userEmail}>124048816@upq.edu.mx</Text>
+            <Text style={styles.userName}>{nombreUsuario} {ApellidoUsuario}</Text>
+            <Text style={styles.userEmail}>correoprueba@gmail.com</Text>
           </View>
         </View>
 
         <View style={styles.options}>
-          <TouchableOpacity style={styles.option}>
+          <TouchableOpacity style={styles.option} onPress={() => setEditarPerfil(true)}>
             <Ionicons name="person-outline" size={22} color="#000033" />
             <Text style={styles.optionText}>Editar perfil</Text>
           </TouchableOpacity>
@@ -63,6 +93,36 @@ export default function PerfilScreen() {
           <Text style={styles.logoutText}>Cerrar sesión</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      <Modal animationType="slide" transparent={true} visible={editarPerfil} onRequestClose={botonCerrar}>
+              
+              <View style={GlobalStyles.modalContenedor}>
+                
+                <View style={GlobalStyles.modalVista}>
+                  
+                  <Text style={GlobalStyles.modalTitulo}>Cambiar nombre de usuario</Text>
+      
+                  <TextInput style={GlobalStyles.modalInput} placeholder="Nombre" placeholderTextColor="#888" value={NewUsername} onChangeText= {SetNewUsername}/>
+      
+                  <TextInput style={GlobalStyles.modalInput} placeholder="Apellido/s" placeholderTextColor="#888" value={NewLastname} onChangeText= {SetNewLastname}/>
+
+                  <View style={GlobalStyles.modalBotones}>
+                    
+                    <TouchableOpacity style={[GlobalStyles.botonBase, GlobalStyles.botonCancelar]} onPress={botonCerrar}>
+                      <Text style={GlobalStyles.botonCancelarTexto}>Cancelar</Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity style={[GlobalStyles.botonBase, GlobalStyles.botonGuardar]} onPress={botonGuardar}>
+                      <Text style={GlobalStyles.botonGuardarTexto}>Guardar</Text>
+                    </TouchableOpacity>
+      
+                  </View>
+      
+                </View>
+      
+              </View>
+      
+            </Modal>
 
       <View style={styles.bottomBar}>
         <TouchableOpacity>
