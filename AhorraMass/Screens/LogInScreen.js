@@ -1,40 +1,13 @@
 import React, { useState } from 'react';
 import { Pressable , View, Text, StyleSheet, TextInput, Button, Alert, Modal, TouchableOpacity } from 'react-native';
-import PrincipalScreen from './PrincipalScreen';
-import SignInScreen from './SignInScreen';
 import GlobalStyles from '../Styles/GlobalStyles';
 
-export default function LogInScreen() {
+export default function LogInScreen({ navigation }) {
   const [contrasena, setContrasena] = useState('');
   const [mail, setMail] = useState('');
-  const [SignIn, setSignIn] = useState(false);
-  const [showPrincipal, setShowPrincipal] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [NewPassword, SetNewPassword] = useState('');
   const [CNewPassword, setCNewPassword] = useState('');
-const botonGuardar = () => {
-        if (!NewPassword || !CNewPassword) {
-            Alert.alert('Error', 'Por favor completa todos los campos');
-            return;
-        }
-
-        if (NewPassword !== CNewPassword) {
-            Alert.alert('Error', 'Las contraseñas no coinciden');
-            return;
-        }
-
-        const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
-        if (!passwordRegex.test(NewPassword)) {
-        Alert.alert("Error", "La contraseña debe tener al menos 8 caracteres, una mayúscula y un número.");
-        return;
-    }
-
-    setModalVisible(false);
-  SetNewPassword('');
-  setCNewPassword('');
-    };
-  const botonCerrar = () => {setModalVisible(false); SetNewPassword(''); setCNewPassword('');};
-
 
   const mostrarAlerta = () => {
     if (mail.trim() === '' || contrasena.trim() === '') {
@@ -54,17 +27,8 @@ const botonGuardar = () => {
       return;
     }
 
- setShowPrincipal(true);
-      
+    navigation.navigate("Principal");
   };
-
-  if (SignIn) {
-        return <SignInScreen/>;
-      }
-
- if (showPrincipal) {
-  return <PrincipalScreen />;
-}
 
   return (
     <View style={styles.container}>
@@ -140,7 +104,7 @@ const botonGuardar = () => {
 
       <View style={styles.switchRow}>
           <Text style={styles.splashSubtitle}>No tienes una cuenta?</Text>
-         <Button title="Registrate" color="#1a26aaff" onPress={()=>setSignIn(true)}/>
+         <Button title="Registrate" color="#1a26aaff" onPress={() => navigation.navigate("SignIn")}/>
         </View>
 
       <View style={styles.pie}></View>

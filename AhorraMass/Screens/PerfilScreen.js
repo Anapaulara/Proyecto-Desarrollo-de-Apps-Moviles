@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Modal, Ale
 import { Ionicons, MaterialIcons, Feather, FontAwesome5 } from "@expo/vector-icons";
 import GlobalStyles from '../Styles/GlobalStyles';
 import LogInScreen from "./LogInScreen";
-import PresupuestoScreen from "./PresupuestoScreen";
+import BottomMenu from "./BottomMenu";
 
 export default function PerfilScreen() {
   const [cerrarSesion, setCerrarSesion] = useState(false);
@@ -124,20 +124,7 @@ export default function PerfilScreen() {
       
             </Modal>
 
-      <View style={styles.bottomBar}>
-        <TouchableOpacity>
-          <Ionicons name="home-outline" size={26} color="white" />
-        </TouchableOpacity>
-        <TouchableOpacity>
-          <Feather name="folder" size={26} color="white" />
-        </TouchableOpacity>
-        <TouchableOpacity>
-          <Ionicons name="time-outline" size={26} color="white" />
-        </TouchableOpacity>
-        <TouchableOpacity>
-          <FontAwesome5 name="user-circle" size={26} color="white" />
-        </TouchableOpacity>
-      </View>
+      <BottomMenu />
     </View>
   );
 }
@@ -208,14 +195,5 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     color: "#000033",
     fontSize: 15,
-  },
-  bottomBar: {
-    position: "absolute",
-    bottom: 0,
-    flexDirection: "row",
-    justifyContent: "space-around",
-    backgroundColor: "#000033",
-    width: "100%",
-    paddingVertical: 10,
   },
 });

@@ -1,25 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import PerfilScreen from './PerfilScreen';
-import Graficas from './GraficasScreen';
-import reg from './RegScreens';
-import React from 'react';
+import BottomMenu from "./BottomMenu";
 
 export default function PrincipalScreen() {
-      const [mostrarPerfil, setMostrarPerfil] = React.useState(false);
-    const [mostrarGrafica, setMostrarGrafica] = React.useState(false);
-    const [mostrarreg, setMostrarreg] = React.useState(false);
-
-  if (mostrarPerfil) {
-  return <PerfilScreen />;
-}
-if (mostrarGrafica) {
-  return <Graficas />;
-}
-if (mostrarreg) {
-  return <Graficas />;
-}
-
-
   return (
 
     <View style={styles.container}>
@@ -55,44 +37,7 @@ if (mostrarreg) {
             
         </View>
 
-      <View style={styles.pie}>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => alert('¡Estas en Casa!')}
-        >
-          <Image
-            source={require('../assets/Images/HouseIcon.png')} 
-            style={styles.icon}
-          />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => setMostrarreg(true)}
-        >
-          <Image
-            source={require('../assets/Images/RegistroIcon.png')} 
-            style={styles.icon}
-          />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => setMostrarGrafica(true)}
-        >
-          <Image
-            source={require('../assets/Images/GraficaIcon.png')} 
-            style={styles.icon}
-          />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => setMostrarPerfil(true)}
-        >
-        <Image
-          source={require('../assets/Images/UsuarioIcon.png')} 
-          style={styles.icon}
-        />
-        </TouchableOpacity>
-      </View>
+      <BottomMenu />
     </View>
   );
 }
