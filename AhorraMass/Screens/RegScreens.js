@@ -1,21 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {View,Text,StyleSheet,TouchableOpacity,ScrollView,Image,} from 'react-native';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import BottomMenu from './BottomMenu'; 
 
-export default function RegistrosScreen({ cambiarPantalla }) {
-  const [registros, setRegistros] = useState([
-    { id: 1, categoria: 'Alimentos', icon: 'shopping-cart', monto: -2500, nota: 'Lorem ipsum' },
-    { id: 2, categoria: 'Entretenimiento', icon: 'play-circle', monto: 500, nota: 'Lorem ipsum' },
-    { id: 3, categoria: 'Salud', icon: 'heart', monto: -1500, nota: 'Lorem ipsum' },
-    { id: 4, categoria: 'Entretenimiento', icon: 'play-circle', monto: 500, nota: 'Lorem ipsum' },
-  ]);
-
+export default function RegScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => cambiarPantalla('Principal')}>
-          <Ionicons name="arrow-back" size={26} color="#001A72" />
-        </TouchableOpacity>
 
         <View style={styles.logoContainer}>
           <Image style={styles.logoImage} />
@@ -31,55 +22,11 @@ export default function RegistrosScreen({ cambiarPantalla }) {
 
       <Text style={styles.titulo}>Registros</Text>
 
-      {/* Lista */}
-      <View style={styles.listaContainer}>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          {registros.map((item) => (
-            <View key={item.id} style={styles.item}>
-              <FontAwesome5
-                name={item.icon}
-                size={20}
-                color="#001A72"
-                style={{ marginRight: 10 }}
-              />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.itemTitulo}>{item.categoria}</Text>
-                <Text style={styles.itemSub}>{item.nota}</Text>
-              </View>
-              <Text
-                style={[
-                  styles.monto,
-                  { color: item.monto < 0 ? '#b30000' : 'green' },
-                ]}
-              >
-                {item.monto < 0 ? `-$${Math.abs(item.monto)}` : `+$${item.monto}`}
-              </Text>
-            </View>
-          ))}
-        </ScrollView>
-      </View>
-
       <TouchableOpacity style={styles.addButton}>
         <Text style={styles.addText}>+</Text>
       </TouchableOpacity>
 
-      <View style={styles.navbar}>
-        <TouchableOpacity onPress={() => cambiarPantalla('Principal')}>
-          <Ionicons name="home-outline" size={26} color="#fff" />
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={() => cambiarPantalla('Presupuesto')}>
-          <Ionicons name="folder-open-outline" size={26} color="#fff" />
-        </TouchableOpacity>
-
-        <TouchableOpacity>
-          <Ionicons name="time-outline" size={26} color="#fff" />
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={() => cambiarPantalla('Graficas')}>
-          <Ionicons name="person-outline" size={26} color="#fff" />
-        </TouchableOpacity>
-      </View>
+      <BottomMenu />
     </View>
   );
 }

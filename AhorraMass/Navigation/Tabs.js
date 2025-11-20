@@ -2,7 +2,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import PrincipalScreen from "../Screens/PrincipalScreen";
 import PerfilScreen from "../Screens/PerfilScreen";
 import GraficasScreen from "../Screens/GraficasScreen";
-import RegistroScreen from "../Screens/RegScreen";
+import RegistroScreen from "../Screens/RegScreens";
 
 const Tab = createBottomTabNavigator();
 

@@ -1,13 +1,12 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Modal, Alert, TextInput } from "react-native";
 import { Ionicons, MaterialIcons, Feather, FontAwesome5 } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 import GlobalStyles from '../Styles/GlobalStyles';
-import LogInScreen from "./LogInScreen";
 import BottomMenu from "./BottomMenu";
 
 export default function PerfilScreen() {
-  const [cerrarSesion, setCerrarSesion] = useState(false);
-  const [presupuesto, setpresupuesto] = useState(false);
+  const navigation = useNavigation();
   const [editarPerfil, setEditarPerfil] = useState(false);
   const [nombreUsuario, setNombreUsuario] = useState("Paulina");
   const [ApellidoUsuario, setApellidoUsuario] = useState("Lara");
@@ -38,13 +37,6 @@ export default function PerfilScreen() {
 };
     const botonCerrar = () => {setEditarPerfil(false); SetNewUsername('');};
 
-  if (cerrarSesion) {
-    return <LogInScreen />;
-  }
-  if (presupuesto) {
-    return <PresupuestoScreen />;
-  }
-
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll}>
@@ -66,7 +58,7 @@ export default function PerfilScreen() {
             <Text style={styles.optionText}>Editar perfil</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.option} onPress={() => setpresupuesto(true)}>
+          <TouchableOpacity style={styles.option} onPress={() => navigation.navigate("Presupuesto")}>
             <Feather name="upload" size={22} color="#000033" />
             <Text style={styles.optionText}>Presupuesto</Text>
 
@@ -88,7 +80,7 @@ export default function PerfilScreen() {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.logout} onPress={() => setCerrarSesion(true)}>
+        <TouchableOpacity style={styles.logout} onPress={() => navigation.navigate("LogIn")}>
           <Ionicons name="log-out-outline" size={22} color="#000033" />
           <Text style={styles.logoutText}>Cerrar sesión</Text>
         </TouchableOpacity>

@@ -2,19 +2,16 @@ import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import PerfilScreen from './PerfilScreen';
+import { useNavigation } from "@react-navigation/native";
 
 export default function PresupuestoScreen() {
-    const [mostrarPerfil, setMostrarPerfil] = React.useState(false);
-
-    if (mostrarPerfil) {
-      return <PerfilScreen />;
-    }
+    const navigation = useNavigation();
 
   return (
     <View style={styles.container}>
       {/* Encabezado */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.option} onPress={() => setMostrarPerfil(true)}>
+        <TouchableOpacity style={styles.option} onPress={() => navigation.navigate("Perfil")}>
         <Ionicons name="arrow-back" size={24} color="#0f1530" />
         </TouchableOpacity>
         <Text style={styles.logoText}>Ahorra<Text style={{ color: '#2A7CF7' }}>+</Text> App</Text>
@@ -71,13 +68,6 @@ export default function PresupuestoScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-
-      <View style={styles.navBar}>
-        <Ionicons name="home" size={26} color="#fff" />
-        <Ionicons name="folder-open" size={26} color="#fff" />
-        <Ionicons name="time-outline" size={26} color="#fff" />
-        <Ionicons name="person-circle" size={26} color="#fff" />
-      </View>
     </View>
   );
 }

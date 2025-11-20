@@ -6,12 +6,13 @@ import PresupuestoScreen from "./Screens/PresupuestoScreen";
 import GraficasScreen from "./Screens/GraficasScreen";
 import LogInScreen from "./Screens/LogInScreen";
 import SignInScreen from "./Screens/SignInScreen";
+import RegistroScreen from "./Screens/RegScreens";
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
-    <NavigationContainer>
+    <NavigationContainer initialRouteName="Principal">
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Principal" component={PrincipalScreen} />
         <Stack.Screen name="Perfil" component={PerfilScreen} />
@@ -19,6 +20,7 @@ export default function App() {
         <Stack.Screen name="Graficas" component={GraficasScreen} />
         <Stack.Screen name="LogIn" component={LogInScreen} />
         <Stack.Screen name="SignIn" component={SignInScreen} />
+        <Stack.Screen name="Registros" component={RegistroScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
