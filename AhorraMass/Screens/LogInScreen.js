@@ -30,6 +30,27 @@ export default function LogInScreen({ navigation }) {
     navigation.navigate("Principal");
   };
 
+  const botonCerrar = () => {
+    setModalVisible(false);
+    SetNewPassword('');
+    setCNewPassword('');
+  };
+
+  const botonGuardar = () => {
+    if (NewPassword.trim() === '' || CNewPassword.trim() === '') {
+      Alert.alert("Error", "Completa ambos campos.");
+      return;
+    }
+
+    if (NewPassword !== CNewPassword) {
+      Alert.alert("Error", "Las contraseñas no coinciden.");
+      return;
+    }
+
+    Alert.alert("Éxito", "Contraseña actualizada.");
+    botonCerrar();
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.titulo}>Ahorra+</Text>
@@ -60,52 +81,65 @@ export default function LogInScreen({ navigation }) {
       </View>
 
       <View style={styles.button}>
-      <Button title="Iniciar sesión" onPress={mostrarAlerta} color='#0f1344'/>
-        </View>
+        <Button title="Iniciar sesión" onPress={mostrarAlerta} color='#0f1344'/>
+      </View>
 
-        <Pressable
-            onPress={() => setModalVisible(true)}
-            style={({ pressed }) => [
-            { opacity: pressed ? 0.5 : 1, }, ]} >
-  <Text style={{ color: 'blue',  fontSize: 18, padding: 10, }}>
-    No recuerdas tu contraseña?
-  </Text>
-</Pressable>
+      <Pressable
+        onPress={() => setModalVisible(true)}
+        style={({ pressed }) => [{ opacity: pressed ? 0.5 : 1 }]}
+      >
+        <Text style={{ color: 'blue', fontSize: 18, padding: 10 }}>
+          No recuerdas tu contraseña?
+        </Text>
+      </Pressable>
 
-    <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={botonCerrar}>
-        
+      <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={botonCerrar}>
         <View style={GlobalStyles.modalContenedor}>
-          
           <View style={GlobalStyles.modalVista}>
-            
             <Text style={GlobalStyles.modalTitulo}>Renovar contraseña</Text>
 
-            <TextInput style={GlobalStyles.modalInput} placeholder="Escribe tu Contraseña nueva" placeholderTextColor="#888" value={NewPassword} onChangeText= {SetNewPassword}/>
-            <TextInput style={GlobalStyles.modalInput} placeholder="Confirmar contraseña" placeholderTextColor="#888" value={CNewPassword} onChangeText={setCNewPassword}/>
+            <TextInput
+              style={GlobalStyles.modalInput}
+              placeholder="Escribe tu Contraseña nueva"
+              placeholderTextColor="#888"
+              value={NewPassword}
+              onChangeText={SetNewPassword}
+            />
+
+            <TextInput
+              style={GlobalStyles.modalInput}
+              placeholder="Confirmar contraseña"
+              placeholderTextColor="#888"
+              value={CNewPassword}
+              onChangeText={setCNewPassword}
+            />
 
             <View style={GlobalStyles.modalBotones}>
-              
-              <TouchableOpacity style={[GlobalStyles.botonBase, GlobalStyles.botonCancelar]} onPress={botonCerrar}>
+
+              <TouchableOpacity
+                style={[GlobalStyles.botonBase, GlobalStyles.botonCancelar]}
+                onPress={botonCerrar}
+              >
                 <Text style={GlobalStyles.botonCancelarTexto}>Cancelar</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity style={[GlobalStyles.botonBase, GlobalStyles.botonGuardar]} onPress={botonGuardar}>
+
+              <TouchableOpacity
+                style={[GlobalStyles.botonBase, GlobalStyles.botonGuardar]}
+                onPress={botonGuardar}
+              >
                 <Text style={GlobalStyles.botonGuardarTexto}>Guardar</Text>
               </TouchableOpacity>
 
             </View>
 
           </View>
-
         </View>
-
       </Modal>
 
-
       <View style={styles.switchRow}>
-          <Text style={styles.splashSubtitle}>No tienes una cuenta?</Text>
-         <Button title="Registrate" color="#1a26aaff" onPress={() => navigation.navigate("SignIn")}/>
-        </View>
+        <Text style={styles.splashSubtitle}>No tienes una cuenta?</Text>
+        <Button title="Registrate" color="#1a26aaff" onPress={() => navigation.navigate("SignIn")}/>
+      </View>
 
       <View style={styles.pie}></View>
     </View>
