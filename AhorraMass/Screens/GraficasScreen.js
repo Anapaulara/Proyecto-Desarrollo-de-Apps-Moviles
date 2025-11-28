@@ -1,70 +1,54 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, useWindowDimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+
+import { PieChart, BarChart, LineChart } from "react-native-chart-kit";
 import BottomMenu from "./BottomMenu";
 
 export default function GraficasScreen() {
   const [vista, setVista] = useState("categoria");
+  
+  const { width } = useWindowDimensions();
+  const chartWidth = width - 40; 
 
-  const ingresosCategoria = [
-    { categoria: "Salario", monto: 6000, color: "#003f91" },
-    { categoria: "Ventas", monto: 2100, color: "#005fcd" },
-    { categoria: "Regalos", monto: 800, color: "#007bff" },
+  const ingresosPieData = [
+    { name: "Salario", population: 6000, color: "#003f91", legendFontColor: "#7F7F7F", legendFontSize: 12 },
+    { name: "Ventas", population: 2100, color: "#005fcd", legendFontColor: "#7F7F7F", legendFontSize: 12 },
+    { name: "Regalos", population: 800, color: "#007bff", legendFontColor: "#7F7F7F", legendFontSize: 12 },
   ];
 
-  const egresosCategoria = [
-    { categoria: "Comida", monto: 1200, color: "#003f91" },
-    { categoria: "Transporte", monto: 450, color: "#005fcd" },
-    { categoria: "Ropa", monto: 800, color: "#007bff" },
-    { categoria: "Diversión", monto: 600, color: "#00a6ff" },
+  const egresosPieData = [
+    { name: "Comida", population: 1200, color: "#003f91", legendFontColor: "#7F7F7F", legendFontSize: 12 },
+    { name: "Transp.", population: 450, color: "#005fcd", legendFontColor: "#7F7F7F", legendFontSize: 12 },
+    { name: "Ropa", population: 800, color: "#007bff", legendFontColor: "#7F7F7F", legendFontSize: 12 },
+    { name: "Ocio", population: 600, color: "#00a6ff", legendFontColor: "#7F7F7F", legendFontSize: 12 },
   ];
 
-  const ingresosMes = [
-    { categoria: "Enero", monto: 7000, color: "#003f91" },
-    { categoria: "Febrero", monto: 6500, color: "#005fcd" },
-    { categoria: "Marzo", monto: 7200, color: "#007bff" },
-  ];
+  const ingresosBarData = {
+    labels: ["Ene", "Feb", "Mar"],
+    datasets: [{ data: [7000, 6500, 7200] }]
+  };
 
-  const egresosMes = [
-    { categoria: "Enero", monto: 3000, color: "#003f91" },
-    { categoria: "Febrero", monto: 2800, color: "#005fcd" },
-    { categoria: "Marzo", monto: 3500, color: "#007bff" },
-  ];
+  const egresosLineData = {
+    labels: ["Ene", "Feb", "Mar"],
+    datasets: [{ data: [3000, 2800, 3500] }]
+  };
 
-  const renderGrafica = (titulo, datos, icono) => {
-    const maxMonto = Math.max(...datos.map((d) => d.monto));
-
-    return (
-      <View style={styles.grafContainer}>
-        <View style={styles.subTitleRow}>
-          <Ionicons name={icono} size={22} color="#001A72" />
-          <Text style={styles.subTitle}>{titulo}</Text>
-        </View>
-
-        {datos.map((d, i) => (
-          <View key={i} style={styles.row}>
-            <View style={styles.iconLabel}>
-              <Ionicons name="analytics-outline" size={18} color="#003f91" />
-              <Text style={styles.label}>{d.categoria}</Text>
-            </View>
-
-            <View style={styles.barBackground}>
-              <View
-                style={[
-                  styles.barFill,
-                  {
-                    width: `${(d.monto / maxMonto) * 100}%`,
-                    backgroundColor: d.color,
-                  },
-                ]}
-              />
-            </View>
-
-            <Text style={styles.monto}>${d.monto}</Text>
-          </View>
-        ))}
-      </View>
-    );
+  const chartConfig = {
+    backgroundGradientFrom: "#ffffff",
+    backgroundGradientTo: "#ffffff",
+    fillShadowGradient: "#003f91",
+    fillShadowGradientOpacity: 1,
+    color: (opacity = 1) => `rgba(0, 63, 145, ${opacity})`,
+    labelColor: (opacity = 1) => `rgba(0, 26, 114, ${opacity})`,
+    strokeWidth: 2,
+    barPercentage: 0.6,
+    useShadowColorFromDataset: false,
+    decimalPlaces: 0,
+    propsForBackgroundLines: {
+      strokeDasharray: "",
+      stroke: "#e3e3e3"
+    }
   };
 
   return (
@@ -78,7 +62,7 @@ export default function GraficasScreen() {
           onPress={() => setVista("categoria")}
         >
           <Ionicons
-            name="pricetags-outline"
+            name="pie-chart-outline"
             size={18}
             color={vista === "categoria" ? "#fff" : "#003f91"}
           />
@@ -92,7 +76,7 @@ export default function GraficasScreen() {
           onPress={() => setVista("mes")}
         >
           <Ionicons
-            name="calendar-outline"
+            name="stats-chart-outline"
             size={18}
             color={vista === "mes" ? "#fff" : "#003f91"}
           />
@@ -102,22 +86,73 @@ export default function GraficasScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={{ paddingHorizontal: 20 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+        
         {vista === "categoria" && (
           <>
-            {renderGrafica("Ingresos por Categoría", ingresosCategoria, "trending-up-outline")}
-            {renderGrafica("Egresos por Categoría", egresosCategoria, "trending-down-outline")}
+            <View style={styles.grafContainer}>
+              <Text style={styles.chartTitle}>Ingresos por Categoría</Text>
+              <PieChart
+                data={ingresosPieData}
+                width={chartWidth}
+                height={220}
+                chartConfig={chartConfig}
+                accessor={"population"}
+                backgroundColor={"transparent"}
+                paddingLeft={"15"}
+              />
+            </View>
+
+            <View style={styles.grafContainer}>
+              <Text style={styles.chartTitle}>Egresos por Categoría</Text>
+              <PieChart
+                data={egresosPieData}
+                width={chartWidth}
+                height={220}
+                chartConfig={chartConfig}
+                accessor={"population"}
+                backgroundColor={"transparent"}
+                paddingLeft={"15"}
+              />
+            </View>
           </>
         )}
 
         {vista === "mes" && (
           <>
-            {renderGrafica("Ingresos Mensuales", ingresosMes, "bar-chart-outline")}
-            {renderGrafica("Egresos Mensuales", egresosMes, "pie-chart-outline")}
+            <View style={styles.grafContainer}>
+              <Text style={styles.chartTitle}>Ingresos Mensuales</Text>
+              <BarChart
+                data={ingresosBarData}
+                width={chartWidth - 20}
+                height={220}
+                yAxisLabel="$"
+                chartConfig={chartConfig}
+                showValuesOnTopOfBars={true}
+                fromZero={true}
+              />
+            </View>
+
+            <View style={styles.grafContainer}>
+              <Text style={styles.chartTitle}>Comportamiento de Gastos</Text>
+              <LineChart
+                data={egresosLineData}
+                width={chartWidth - 20}
+                height={220}
+                yAxisLabel="$"
+                chartConfig={{
+                    ...chartConfig,
+                    fillShadowGradient: "#00a6ff", 
+                    color: (opacity = 1) => `rgba(0, 166, 255, ${opacity})`,
+                }}
+                bezier
+                style={{ borderRadius: 16 }}
+                fromZero={true}
+              />
+            </View>
           </>
         )}
 
-        <View style={{ height: 130 }} />
       </ScrollView>
 
       <BottomMenu />
@@ -130,7 +165,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#ffffff",
   },
-
   title: {
     fontSize: 32,
     color: "#001A72",
@@ -139,13 +173,11 @@ const styles = StyleSheet.create({
     marginTop: 50,
     marginBottom: 15,
   },
-
   tabContainer: {
     flexDirection: "row",
     justifyContent: "center",
     marginBottom: 20,
   },
-
   tab: {
     flexDirection: "row",
     alignItems: "center",
@@ -156,82 +188,36 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: "#e6eeff",
   },
-
   tabActive: {
     backgroundColor: "#003f91",
   },
-
   tabText: {
     fontSize: 16,
     fontWeight: "600",
     color: "#003f91",
   },
-
   tabTextActive: {
     color: "#fff",
   },
-
   grafContainer: {
-    marginBottom: 45,
+    marginBottom: 25,
+    marginHorizontal: 20,
     backgroundColor: "#f5f7ff",
-    padding: 18,
+    padding: 10,
     borderRadius: 18,
+    alignItems: 'center',
     shadowColor: "#000",
-    shadowOpacity: 0.07,
-    shadowRadius: 6,
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
     elevation: 3,
   },
-
-  subTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-    gap: 6,
-  },
-
-  subTitle: {
-    fontSize: 20,
+  chartTitle: {
+    fontSize: 18,
     fontWeight: "bold",
     color: "#001A72",
-  },
-
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-
-  iconLabel: {
-    width: 130,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-  },
-
-  label: {
-    fontSize: 15,
-    color: "#003f91",
-    fontWeight: "600",
-  },
-
-  barBackground: {
-    flex: 1,
-    height: 22,
-    backgroundColor: "#dfe8ff",
-    borderRadius: 15,
-    overflow: "hidden",
-    marginHorizontal: 10,
-  },
-
-  barFill: {
-    height: "100%",
-    borderRadius: 15,
-  },
-
-  monto: {
-    width: 70,
-    textAlign: "right",
-    fontWeight: "700",
-    color: "#222",
-  },
+    marginBottom: 10,
+    alignSelf: 'flex-start',
+    marginLeft: 10,
+    marginTop: 10
+  }
 });
