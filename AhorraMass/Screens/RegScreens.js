@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, TextInput,
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import BottomMenu from './BottomMenu';
 
-export default function RegScreen() {
+export default function RegScreens() {
   const [registros, setRegistros] = useState([
     { id: 1, nombre: "Gasolina", monto: "350", categoria: "Carro" },
     { id: 2, nombre: "Comida", monto: "120", categoria: "Supermercado" },

@@ -12,7 +12,7 @@ export default function BottomMenu() {
  <Ionicons name="home-outline" size={26} color="white" />
  </TouchableOpacity>
 
- <TouchableOpacity onPress={() => navigation.navigate("Registros")}>
+ <TouchableOpacity onPress={() => navigation.navigate("Reg")}>
  <Feather name="folder" size={26} color="white" />
  </TouchableOpacity>
 
