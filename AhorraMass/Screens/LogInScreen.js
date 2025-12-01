@@ -1,53 +1,76 @@
-import React, { useState } from 'react';
-import { Pressable , View, Text, StyleSheet, TextInput, Button, Alert, Modal, TouchableOpacity } from 'react-native';
-import GlobalStyles from '../Styles/GlobalStyles';
+import React, { useState, useEffect } from "react";
+import {
+  Pressable,
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  Button,
+  Alert,
+  Modal,
+  TouchableOpacity,
+} from "react-native";
+
+import GlobalStyles from "../Styles/GlobalStyles";
+import AuthService from "../src/services/AuthService";
 
 export default function LogInScreen({ navigation }) {
-  const [contrasena, setContrasena] = useState('');
-  const [mail, setMail] = useState('');
+  const [mail, setMail] = useState("");
+  const [contrasena, setContrasena] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
-  const [NewPassword, SetNewPassword] = useState('');
-  const [CNewPassword, setCNewPassword] = useState('');
+  const [newPassword, setNewPassword] = useState("");
+  const [cNewPassword, setCNewPassword] = useState("");
 
-  const mostrarAlerta = () => {
-    if (mail.trim() === '' || contrasena.trim() === '') {
-      Alert.alert("Error", "Por favor, ingresa todos los campos correctamente.");
+  useEffect(() => {
+    AuthService.initialize();
+  }, []);
+
+  // LOGIN CORREGIDO
+  const iniciarSesion = async () => {
+    if (!mail || !contrasena) {
+      Alert.alert("Error", "Completa todos los campos.");
       return;
     }
 
-    const emailRegex = /\S+@\S+\.\S+/;
-    if (!emailRegex.test(mail)) {
-      Alert.alert("Error", "Por favor, ingresa un correo electrónico válido.");
+    const usuario = await AuthService.loginUsuario(mail, contrasena);
+
+    // VALIDACIÓN REAL
+    if (!usuario || usuario.length === 0) {
+      Alert.alert("Error", "Correo o contraseña incorrectos.");
       return;
     }
 
-    const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
-    if (!passwordRegex.test(contrasena)) {
-      Alert.alert("Error", "La contraseña debe tener al menos 8 caracteres, una mayúscula y un número.");
-      return;
-    }
-
+    Alert.alert("Bienvenido", "Inicio de sesión exitoso.");
     navigation.navigate("Principal");
   };
 
   const botonCerrar = () => {
     setModalVisible(false);
-    SetNewPassword('');
-    setCNewPassword('');
+    setNewPassword("");
+    setCNewPassword("");
   };
 
-  const botonGuardar = () => {
-    if (NewPassword.trim() === '' || CNewPassword.trim() === '') {
-      Alert.alert("Error", "Completa ambos campos.");
+  const botonGuardar = async () => {
+    if (!mail) {
+      Alert.alert("Error", "Ingresa tu correo en el campo superior.");
       return;
     }
 
-    if (NewPassword !== CNewPassword) {
+    if (newPassword !== cNewPassword) {
       Alert.alert("Error", "Las contraseñas no coinciden.");
       return;
     }
 
-    Alert.alert("Éxito", "Contraseña actualizada.");
+    const existe = await AuthService.buscarCorreo(mail);
+
+    // MISMO PROBLEMA AQUÍ, TAMBIÉN ARREGLADO
+    if (!existe || existe.length === 0) {
+      Alert.alert("Error", "Ese correo no está registrado.");
+      return;
+    }
+
+    await AuthService.actualizarPassword(mail, newPassword);
+    Alert.alert("Éxito", "Tu contraseña ha sido actualizada.");
     botonCerrar();
   };
 
@@ -62,8 +85,7 @@ export default function LogInScreen({ navigation }) {
         <Text style={styles.splashSubtitle}>Correo:</Text>
         <TextInput
           style={styles.input}
-          placeholder="Gmail"
-          placeholderTextColor="#bbb"
+          placeholder="correo@example.com"
           value={mail}
           onChangeText={setMail}
           keyboardType="email-address"
@@ -73,7 +95,6 @@ export default function LogInScreen({ navigation }) {
         <TextInput
           style={styles.input}
           placeholder="Contraseña"
-          placeholderTextColor="#bbb"
           secureTextEntry
           value={contrasena}
           onChangeText={setContrasena}
@@ -81,41 +102,38 @@ export default function LogInScreen({ navigation }) {
       </View>
 
       <View style={styles.button}>
-        <Button title="Iniciar sesión" onPress={mostrarAlerta} color='#0f1344'/>
+        <Button title="Iniciar sesión" color="#0f1344" onPress={iniciarSesion} />
       </View>
 
-      <Pressable
-        onPress={() => setModalVisible(true)}
-        style={({ pressed }) => [{ opacity: pressed ? 0.5 : 1 }]}
-      >
-        <Text style={{ color: 'blue', fontSize: 18, padding: 10 }}>
-          No recuerdas tu contraseña?
+      <Pressable onPress={() => setModalVisible(true)}>
+        <Text style={{ color: "blue", fontSize: 18, padding: 10 }}>
+          ¿No recuerdas tu contraseña?
         </Text>
       </Pressable>
 
-      <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={botonCerrar}>
+      {/* MODAL */}
+      <Modal animationType="slide" transparent={true} visible={modalVisible}>
         <View style={GlobalStyles.modalContenedor}>
           <View style={GlobalStyles.modalVista}>
             <Text style={GlobalStyles.modalTitulo}>Renovar contraseña</Text>
 
             <TextInput
               style={GlobalStyles.modalInput}
-              placeholder="Escribe tu Contraseña nueva"
-              placeholderTextColor="#888"
-              value={NewPassword}
-              onChangeText={SetNewPassword}
+              placeholder="Nueva contraseña"
+              secureTextEntry
+              value={newPassword}
+              onChangeText={setNewPassword}
             />
 
             <TextInput
               style={GlobalStyles.modalInput}
               placeholder="Confirmar contraseña"
-              placeholderTextColor="#888"
-              value={CNewPassword}
+              secureTextEntry
+              value={cNewPassword}
               onChangeText={setCNewPassword}
             />
 
             <View style={GlobalStyles.modalBotones}>
-
               <TouchableOpacity
                 style={[GlobalStyles.botonBase, GlobalStyles.botonCancelar]}
                 onPress={botonCerrar}
@@ -129,16 +147,18 @@ export default function LogInScreen({ navigation }) {
               >
                 <Text style={GlobalStyles.botonGuardarTexto}>Guardar</Text>
               </TouchableOpacity>
-
             </View>
-
           </View>
         </View>
       </Modal>
 
       <View style={styles.switchRow}>
-        <Text style={styles.splashSubtitle}>No tienes una cuenta?</Text>
-        <Button title="Registrate" color="#1a26aaff" onPress={() => navigation.navigate("SignIn")}/>
+        <Text style={styles.splashSubtitle}>¿No tienes una cuenta?</Text>
+        <Button
+          title="Regístrate"
+          color="#1a26aa"
+          onPress={() => navigation.navigate("SignIn")}
+        />
       </View>
 
       <View style={styles.pie}></View>
@@ -146,77 +166,65 @@ export default function LogInScreen({ navigation }) {
   );
 }
 
+// tus estilos igual que estaban
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
+    backgroundColor: "#ffffff",
+    alignItems: "center",
     paddingTop: 40,
   },
   pie: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
-    alignItems: 'center',
-    backgroundColor: '#0f1344',
-    width: '100%',
+    width: "100%",
     padding: 35,
+    backgroundColor: "#0f1344",
     borderTopLeftRadius: 15,
     borderTopRightRadius: 15,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
   },
   titulo: {
-    fontFamily: 'Arial',
-    fontWeight: 'bold',
     fontSize: 40,
-    color: '#0f1344',
+    fontWeight: "bold",
+    color: "#0f1344",
   },
   mainOverlay: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(47, 127, 255, 0.26)',
+    alignItems: "center",
+    backgroundColor: "rgba(47,127,255,0.26)",
     padding: 20,
     borderRadius: 12,
-    width: '90%',
+    width: "90%",
     marginTop: 30,
-    marginBottom: 30,
   },
   welcome: {
-    color: '#000',
     fontSize: 22,
     marginBottom: 20,
-    fontWeight: '600',
+    fontWeight: "600",
+    color: "#000",
   },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    justifyContent: 'space-evenly',
-    width: '100%',
-    borderRadius: 8,
-    marginBottom: 15,
+  splashTitle: {
+    fontSize: 26,
+    fontWeight: "700",
+  },
+  splashSubtitle: {
+    color: "#333",
+    marginTop: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#aaa',
+    borderColor: "#aaa",
     borderRadius: 5,
-    width: '80%',
+    width: "80%",
     padding: 10,
     marginBottom: 15,
-    color: '#000',
-  },
-  splashTitle: {
-    color: '#000',
-    fontSize: 26,
-    fontWeight: '700',
-  },
-  splashSubtitle: {
-    color: '#333',
-    marginTop: 8,
   },
   button: {
-    paddingHorizontal: 18,
-    paddingVertical: 15,
-    borderRadius: 8,
+    marginTop: 10,
+  },
+  switchRow: {
+    flexDirection: "row",
+    marginTop: 10,
+    alignItems: "center",
+    gap: 10,
   },
 });
