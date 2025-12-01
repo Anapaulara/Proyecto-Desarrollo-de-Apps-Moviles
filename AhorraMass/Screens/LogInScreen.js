@@ -7,9 +7,9 @@ import {
   TextInput,
   Button,
   Alert,
-  Modal,
   TouchableOpacity,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 import GlobalStyles from "../Styles/GlobalStyles";
 import AuthService from "../src/services/AuthService";
@@ -17,24 +17,23 @@ import AuthService from "../src/services/AuthService";
 export default function LogInScreen({ navigation }) {
   const [mail, setMail] = useState("");
   const [contrasena, setContrasena] = useState("");
-  const [modalVisible, setModalVisible] = useState(false);
-  const [newPassword, setNewPassword] = useState("");
-  const [cNewPassword, setCNewPassword] = useState("");
+  const [showPass, setShowPass] = useState(false);
 
   useEffect(() => {
     AuthService.initialize();
   }, []);
 
-  // LOGIN CORREGIDO
   const iniciarSesion = async () => {
     if (!mail || !contrasena) {
       Alert.alert("Error", "Completa todos los campos.");
       return;
     }
 
-    const usuario = await AuthService.loginUsuario(mail, contrasena);
+    const usuario = await AuthService.loginUsuario(
+      mail.trim().toLowerCase(),
+      contrasena
+    );
 
-    // VALIDACIÓN REAL
     if (!usuario || usuario.length === 0) {
       Alert.alert("Error", "Correo o contraseña incorrectos.");
       return;
@@ -42,36 +41,6 @@ export default function LogInScreen({ navigation }) {
 
     Alert.alert("Bienvenido", "Inicio de sesión exitoso.");
     navigation.navigate("Principal");
-  };
-
-  const botonCerrar = () => {
-    setModalVisible(false);
-    setNewPassword("");
-    setCNewPassword("");
-  };
-
-  const botonGuardar = async () => {
-    if (!mail) {
-      Alert.alert("Error", "Ingresa tu correo en el campo superior.");
-      return;
-    }
-
-    if (newPassword !== cNewPassword) {
-      Alert.alert("Error", "Las contraseñas no coinciden.");
-      return;
-    }
-
-    const existe = await AuthService.buscarCorreo(mail);
-
-    // MISMO PROBLEMA AQUÍ, TAMBIÉN ARREGLADO
-    if (!existe || existe.length === 0) {
-      Alert.alert("Error", "Ese correo no está registrado.");
-      return;
-    }
-
-    await AuthService.actualizarPassword(mail, newPassword);
-    Alert.alert("Éxito", "Tu contraseña ha sido actualizada.");
-    botonCerrar();
   };
 
   return (
@@ -89,68 +58,37 @@ export default function LogInScreen({ navigation }) {
           value={mail}
           onChangeText={setMail}
           keyboardType="email-address"
+          autoCapitalize="none"
         />
 
         <Text style={styles.splashSubtitle}>Contraseña:</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Contraseña"
-          secureTextEntry
-          value={contrasena}
-          onChangeText={setContrasena}
-        />
+
+        <View style={styles.passwordContainer}>
+          <TextInput
+            style={styles.passwordInput}
+            placeholder="Contraseña"
+            secureTextEntry={!showPass}
+            value={contrasena}
+            onChangeText={setContrasena}
+          />
+          <TouchableOpacity onPress={() => setShowPass(!showPass)}>
+            <Ionicons
+              name={showPass ? "eye-off" : "eye"}
+              size={22}
+              color="#333"
+            />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.button}>
         <Button title="Iniciar sesión" color="#0f1344" onPress={iniciarSesion} />
       </View>
 
-      <Pressable onPress={() => setModalVisible(true)}>
-        <Text style={{ color: "blue", fontSize: 18, padding: 10 }}>
-          ¿No recuerdas tu contraseña?
-        </Text>
+      {/* CONECTAR A PANTALLA RECUPERAR */}
+      <Pressable onPress={() => navigation.navigate("Recuperar")}>
+        <Text style={styles.link}>¿No recuerdas tu contraseña?</Text>
       </Pressable>
-
-      {/* MODAL */}
-      <Modal animationType="slide" transparent={true} visible={modalVisible}>
-        <View style={GlobalStyles.modalContenedor}>
-          <View style={GlobalStyles.modalVista}>
-            <Text style={GlobalStyles.modalTitulo}>Renovar contraseña</Text>
-
-            <TextInput
-              style={GlobalStyles.modalInput}
-              placeholder="Nueva contraseña"
-              secureTextEntry
-              value={newPassword}
-              onChangeText={setNewPassword}
-            />
-
-            <TextInput
-              style={GlobalStyles.modalInput}
-              placeholder="Confirmar contraseña"
-              secureTextEntry
-              value={cNewPassword}
-              onChangeText={setCNewPassword}
-            />
-
-            <View style={GlobalStyles.modalBotones}>
-              <TouchableOpacity
-                style={[GlobalStyles.botonBase, GlobalStyles.botonCancelar]}
-                onPress={botonCerrar}
-              >
-                <Text style={GlobalStyles.botonCancelarTexto}>Cancelar</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[GlobalStyles.botonBase, GlobalStyles.botonGuardar]}
-                onPress={botonGuardar}
-              >
-                <Text style={GlobalStyles.botonGuardarTexto}>Guardar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
 
       <View style={styles.switchRow}>
         <Text style={styles.splashSubtitle}>¿No tienes una cuenta?</Text>
@@ -166,7 +104,6 @@ export default function LogInScreen({ navigation }) {
   );
 }
 
-// tus estilos igual que estaban
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -218,6 +155,11 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 15,
   },
+  link: {
+    color: "blue",
+    fontSize: 18,
+    padding: 10,
+  },
   button: {
     marginTop: 10,
   },
@@ -226,5 +168,20 @@ const styles = StyleSheet.create({
     marginTop: 10,
     alignItems: "center",
     gap: 10,
+  },
+  passwordContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#aaa",
+    borderRadius: 5,
+    width: "80%",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    marginBottom: 15,
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 8,
   },
 });

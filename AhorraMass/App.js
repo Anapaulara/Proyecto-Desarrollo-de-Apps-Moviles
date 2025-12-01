@@ -10,14 +10,30 @@ import GraficasScreen from "./Screens/GraficasScreen";
 import PerfilScreen from "./Screens/PerfilScreen";
 import BottomMenu from "./Screens/BottomMenu";
 import PresupuestoScreen from "./Screens/PresupuestoScreen";
+import RecuperarPasswordScreen from "./Screens/RecuperarPasswordScreen";
 
 import AuthService from "./src/services/AuthService";
+import * as SQLite from "expo-sqlite";
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
   useEffect(() => {
-    AuthService.initialize();
+    async function init() {
+      try {
+        // Borrar base de datos SOLO una vez
+/*         await SQLite.deleteDatabaseAsync("auth.db");
+        await SQLite.deleteDatabaseAsync("miDB.db");
+ */
+        // Inicializar base con tablas nuevas
+        await AuthService.initialize();
+        console.log("BASE INICIALIZADA");
+      } catch (error) {
+        console.log("ERROR INICIALIZANDO DB:", error);
+      }
+    }
+
+    init();
   }, []);
 
   return (
@@ -31,6 +47,7 @@ export default function App() {
         <Stack.Screen name="Perfil" component={PerfilScreen} />
         <Stack.Screen name="BottomMenu" component={BottomMenu} />
         <Stack.Screen name="Presupuesto" component={PresupuestoScreen} />
+        <Stack.Screen name="Recuperar" component={RecuperarPasswordScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

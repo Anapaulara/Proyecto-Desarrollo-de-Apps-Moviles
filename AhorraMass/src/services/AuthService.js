@@ -7,142 +7,84 @@ class AuthService {
         this.storageKey = "usuarios";
     }
 
-    // -------------------------------------
-    // INICIALIZAR BD
-    // -------------------------------------
     async initialize() {
-        if (Platform.OS === "web") {
-            console.log("WEB → usando localStorage");
-            return;
-        }
+        if (Platform.OS === "web") return;
 
-        console.log("MÓVIL → usando SQLite");
-
-        this.db = await SQLite.openDatabaseAsync("auth.db");
+        this.db = await SQLite.openDatabaseAsync("auth2.db");
 
         await this.db.execAsync(`
             CREATE TABLE IF NOT EXISTS usuarios (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT,
+                apellido TEXT,
+                dia TEXT,
+                mes TEXT,
+                ano TEXT,
+                genero TEXT,
                 correo TEXT UNIQUE NOT NULL,
                 contrasena TEXT NOT NULL
             );
         `);
     }
 
-    // -------------------------------------
-    // REGISTRAR
-    // -------------------------------------
-    async registrarUsuario(correo, contrasena) {
-        if (Platform.OS === "web") {
-            const usuarios = await this.getAllUsuarios();
-
-            if (usuarios.some(u => u.correo === correo)) {
-                return false; // correo repetido
-            }
-
-            usuarios.push({
-                id: Date.now(),
-                correo,
-                contrasena
-            });
-
-            localStorage.setItem(this.storageKey, JSON.stringify(usuarios));
-            return true;
-        }
+    async registrarUsuario(userData) {
+        const { nombre, apellido, dia, mes, ano, genero, correo, contrasena } = userData;
 
         try {
             await this.db.runAsync(
-                "INSERT INTO usuarios (correo, contrasena) VALUES (?, ?)",
-                [correo, contrasena]
+                `INSERT INTO usuarios 
+                (nombre, apellido, dia, mes, ano, genero, correo, contrasena)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                [nombre, apellido, dia, mes, ano, genero, correo, contrasena]
             );
             return true;
+
         } catch (err) {
             console.log("ERROR REGISTRAR:", err);
             return false;
         }
     }
 
-    // -------------------------------------
-    // LOGIN
-    // -------------------------------------
     async loginUsuario(correo, contrasena) {
-        if (Platform.OS === "web") {
-            const usuarios = await this.getAllUsuarios();
-            return usuarios.find(
-                u => u.correo === correo && u.contrasena === contrasena
-            ) || null;
-        }
-
         try {
             const result = await this.db.getAllAsync(
                 "SELECT * FROM usuarios WHERE correo = ? AND contrasena = ?",
                 [correo, contrasena]
             );
+            return result.length > 0 ? result[0] : null;
 
-            if (result.length > 0) return result[0];
-
-            return null;
         } catch (err) {
             console.log("ERROR LOGIN:", err);
             return null;
         }
     }
 
-    // -------------------------------------
-    // BUSCAR CORREO
-    // -------------------------------------
     async buscarCorreo(correo) {
-        if (Platform.OS === "web") {
-            const usuarios = await this.getAllUsuarios();
-            return usuarios.find(u => u.correo === correo) || null;
-        }
-
         try {
             const result = await this.db.getAllAsync(
                 "SELECT * FROM usuarios WHERE correo = ?",
                 [correo]
             );
-
             return result.length ? result[0] : null;
+
         } catch (err) {
             console.log("ERROR BUSCAR:", err);
             return null;
         }
     }
 
-    // -------------------------------------
-    // ACTUALIZAR CONTRASEÑA
-    // -------------------------------------
     async actualizarPassword(correo, nuevaPass) {
-        if (Platform.OS === "web") {
-            const usuarios = await this.getAllUsuarios();
-            const usuario = usuarios.find(u => u.correo === correo);
-
-            if (!usuario) return false;
-
-            usuario.contrasena = nuevaPass;
-            localStorage.setItem(this.storageKey, JSON.stringify(usuarios));
-            return true;
-        }
-
         try {
             await this.db.runAsync(
                 "UPDATE usuarios SET contrasena = ? WHERE correo = ?",
                 [nuevaPass, correo]
             );
             return true;
+
         } catch (err) {
             console.log("ERROR UPDATE:", err);
             return false;
         }
-    }
-
-    // -------------------------------------
-    // OBTENER TODOS — SOLO WEB
-    // -------------------------------------
-    async getAllUsuarios() {
-        const data = localStorage.getItem(this.storageKey);
-        return data ? JSON.parse(data) : [];
     }
 }
 
