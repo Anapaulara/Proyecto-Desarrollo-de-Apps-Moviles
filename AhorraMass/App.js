@@ -11,6 +11,8 @@ import PerfilScreen from "./Screens/PerfilScreen";
 import BottomMenu from "./Screens/BottomMenu";
 import PresupuestoScreen from "./Screens/PresupuestoScreen";
 import RecuperarPasswordScreen from "./Screens/RecuperarPasswordScreen";
+import TarjetasBancosScreen from './Screens/TarjetasBancosScreen';
+import PrivacidadDatosScreen from './Screens/PrivacidadDatosScreen';
 
 import AuthService from "./src/services/AuthService";
 import * as SQLite from "expo-sqlite";
@@ -48,6 +50,8 @@ export default function App() {
         <Stack.Screen name="BottomMenu" component={BottomMenu} />
         <Stack.Screen name="Presupuesto" component={PresupuestoScreen} />
         <Stack.Screen name="Recuperar" component={RecuperarPasswordScreen} />
+        <Stack.Screen name="TarjetasBancos" component={TarjetasBancosScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="PrivacidadDatos" component={PrivacidadDatosScreen} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

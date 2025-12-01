@@ -1,17 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Image,
-  Alert,
-  ScrollView,
-  Switch,
-  Platform,
-  KeyboardAvoidingView
-} from "react-native";
+import {View,Text,TextInput,TouchableOpacity,StyleSheet,Image,Alert,ScrollView,Switch,Platform,KeyboardAvoidingView} from "react-native";
 import AuthService from "../src/services/AuthService";
 
 const logo = require("../assets/Images/logoo.png");
@@ -98,7 +86,7 @@ export default function SignInScreen({ navigation }) {
       }
 
       mostrarAlerta("Registro exitoso", `${nombre}, tu cuenta fue creada.`);
-      navigation.navigate("Login");
+      navigation.navigate("LogIn");
     } catch (err) {
       console.log("ERROR REGISTRO:", err);
       mostrarAlerta("Error", "Hubo un error al registrar.");
