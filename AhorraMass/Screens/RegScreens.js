@@ -1,58 +1,87 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Modal, Alert } from 'react-native';
-import { FontAwesome5 } from '@expo/vector-icons';
-import BottomMenu from './BottomMenu';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  TextInput,
+  Modal,
+  Alert,
+} from "react-native";
+
+import { FontAwesome5, Ionicons, MaterialIcons } from "@expo/vector-icons";
+import BottomMenu from "./BottomMenu";
 import TransaccionesService from "../src/services/TransaccionesService";
 
-// ⭐ CATEGORÍAS OFICIALES
-const categoriasIngresos = ["Sueldo", "Negocio", "Intereses", "Otros"];
-const categoriasEgresos = ["Comida", "Transporte", "Entretenimiento", "Hogar", "Ropa", "Salud", "Otros"];
+// ICONOS POR CATEGORÍA
+const iconosCategoria = {
+  Sueldo: "briefcase",
+  Negocio: "store",
+  Intereses: "chart-line",
+  OtrosIngresos: "coins",
 
-export default function RegScreen() {
+  Comida: "hamburger",
+  Transporte: "bus",
+  Entretenimiento: "film",
+  Hogar: "home",
+  Ropa: "tshirt",
+  Salud: "medkit",
+  OtrosEgresos: "coins",
+};
+
+const categoriasIngresos = ["Sueldo", "Negocio", "Intereses", "OtrosIngresos"];
+const categoriasEgresos = [
+  "Comida",
+  "Transporte",
+  "Entretenimiento",
+  "Hogar",
+  "Ropa",
+  "Salud",
+  "OtrosEgresos",
+];
+
+export default function RegScreens() {
   const [registros, setRegistros] = useState([]);
 
   const [modalVisible, setModalVisible] = useState(false);
-  const [modalMode, setModalMode] = useState('add');
+  const [modalMode, setModalMode] = useState("add");
   const [editId, setEditId] = useState(null);
 
   const [tipo, setTipo] = useState("egreso");
-  const [categoria, setCategoria] = useState('');
-  const [nombre, setNombre] = useState('');
-  const [monto, setMonto] = useState('');
-  const [descripcion, setDescripcion] = useState('');
-  const [fecha, setFecha] = useState('');
+  const [categoria, setCategoria] = useState("");
+  const [nombre, setNombre] = useState("");
+  const [monto, setMonto] = useState("");
+  const [descripcion, setDescripcion] = useState("");
+  const [fecha, setFecha] = useState("");
 
-  const [filtroCategoria, setFiltroCategoria] = useState('');
+  const [filtroCategoria, setFiltroCategoria] = useState("");
+  const [mostrarFiltros, setMostrarFiltros] = useState(false);
 
   useEffect(() => {
+    TransaccionesService.initialize();
     cargarRegistros();
   }, []);
 
   const cargarRegistros = async () => {
-    try {
-      const data = await TransaccionesService.obtenerTodos();
-      setRegistros(data);
-    } catch (error) {
-      console.log("Error cargando registros:", error);
-    }
+    const data = await TransaccionesService.obtenerTodos();
+    setRegistros(data);
   };
 
-  // ⭐ Abrir modal para agregar
   const abrirAgregar = () => {
-    setModalMode('add');
+    setModalMode("add");
     setEditId(null);
     setTipo("egreso");
-    setCategoria('');
-    setNombre('');
-    setMonto('');
-    setDescripcion('');
-    setFecha('');
+    setCategoria("");
+    setNombre("");
+    setMonto("");
+    setDescripcion("");
+    setFecha("");
     setModalVisible(true);
   };
 
-  // ⭐ Abrir modal para editar
   const abrirEditar = (item) => {
-    setModalMode('edit');
+    setModalMode("edit");
     setEditId(item.id);
     setTipo(item.tipo);
     setCategoria(item.categoria);
@@ -63,45 +92,38 @@ export default function RegScreen() {
     setModalVisible(true);
   };
 
-  // ⭐ Guardar transacción
   const guardarRegistro = async () => {
-    if (!nombre.trim() || !monto.trim() || !categoria.trim() || !fecha.trim()) {
-      Alert.alert("Error", "Completa todos los campos obligatorios.");
-      return;
+    if (!nombre || !monto || !categoria || !fecha) {
+      return Alert.alert("Error", "Completa todos los campos obligatorios.");
     }
 
-    try {
-      if (modalMode === 'add') {
-        await TransaccionesService.agregar(
-          tipo,
-          categoria,
-          nombre,
-          parseFloat(monto),
-          fecha,
-          descripcion
-        );
-      } else {
-        await TransaccionesService.editar(
-          editId,
-          tipo,
-          categoria,
-          nombre,
-          parseFloat(monto),
-          fecha,
-          descripcion
-        );
-      }
-
-      setModalVisible(false);
-      cargarRegistros();
-    } catch (error) {
-      Alert.alert("Error", "No se pudo guardar el registro.");
-      console.log("ERROR guardar:", error);
+    if (modalMode === "add") {
+      await TransaccionesService.agregar(
+        tipo,
+        categoria,
+        nombre,
+        parseFloat(monto),
+        fecha,
+        descripcion
+      );
+    } else {
+      await TransaccionesService.editar(
+        editId,
+        tipo,
+        categoria,
+        nombre,
+        parseFloat(monto),
+        fecha,
+        descripcion
+      );
     }
+
+    setModalVisible(false);
+    cargarRegistros();
   };
 
   const eliminarRegistro = (id) => {
-    Alert.alert("Confirmar", "¿Eliminar este registro?", [
+    Alert.alert("Confirmar", "¿Eliminar registro?", [
       { text: "Cancelar" },
       {
         text: "Eliminar",
@@ -109,148 +131,302 @@ export default function RegScreen() {
         onPress: async () => {
           await TransaccionesService.eliminar(id);
           cargarRegistros();
-        }
-      }
+        },
+      },
     ]);
+  };
+
+  const manejarFecha = (text) => {
+    let limpio = text.replace(/\D/g, "");
+    if (limpio.length >= 3 && limpio.length <= 4) {
+      limpio = limpio.replace(/(\d{2})(\d{1,2})/, "$1/$2");
+    } else if (limpio.length >= 5) {
+      limpio = limpio.replace(/(\d{2})(\d{2})(\d{1,4})/, "$1/$2/$3");
+    }
+    if (limpio.length > 10) limpio = limpio.slice(0, 10);
+    setFecha(limpio);
   };
 
   return (
     <View style={styles.container}>
-
-      {/* ENCABEZADO */}
       <View style={styles.header}>
         <Text style={styles.titulo}>Transacciones</Text>
       </View>
 
-      {/* FILTRO POR CATEGORÍA */}
-      <View style={styles.filtros}>
-        <Text style={{ fontWeight: "bold" }}>Filtrar categoría:</Text>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 10 }}>
-          { [...categoriasIngresos, ...categoriasEgresos].map((cat, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[
-                styles.catBtn,
-                filtroCategoria === cat && { backgroundColor: "#001A72" }
-              ]}
-              onPress={() => setFiltroCategoria(cat)}
-            >
-              <Text style={[
-                styles.catText,
-                filtroCategoria === cat && { color: "#fff" }
-              ]}>{cat}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
+      {/* FILTROS */}
+      <View style={styles.filtrosBox}>
         <TouchableOpacity
-          style={styles.btnFiltro}
-          onPress={async () => {
-            if (!filtroCategoria) return cargarRegistros();
-            const data = await TransaccionesService.filtrarPorCategoria(filtroCategoria);
-            setRegistros(data);
-          }}
+          onPress={() => setMostrarFiltros(!mostrarFiltros)}
+          style={styles.toggleBtn}
         >
-          <Text style={{ color: "#fff" }}>Aplicar filtro</Text>
+          <Text style={styles.toggleText}>
+            {mostrarFiltros ? "Ocultar categorías" : "Mostrar categorías"}
+          </Text>
         </TouchableOpacity>
+
+        {mostrarFiltros && (
+          <>
+            <Text style={styles.filtroTitulo}>Filtrar por categoría</Text>
+
+            <View style={styles.filtroGrid}>
+              {[...categoriasIngresos, ...categoriasEgresos].map((cat) => (
+                <TouchableOpacity
+                  key={cat}
+                  style={[
+                    styles.filtroItem,
+                    filtroCategoria === cat && styles.filtroItemActivo,
+                  ]}
+                  onPress={() =>
+                    setFiltroCategoria(filtroCategoria === cat ? "" : cat)
+                  }
+                >
+                  <FontAwesome5
+                    name={iconosCategoria[cat]}
+                    size={14}
+                    color={filtroCategoria === cat ? "#fff" : "#003f91"}
+                  />
+                  <Text
+                    style={[
+                      styles.filtroText,
+                      filtroCategoria === cat && { color: "#fff" },
+                    ]}
+                  >
+                    {cat}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TouchableOpacity
+              style={styles.aplicarBtn}
+              onPress={async () => {
+                if (!filtroCategoria) return cargarRegistros();
+                const data =
+                  await TransaccionesService.filtrarPorCategoria(
+                    filtroCategoria
+                  );
+                setRegistros(data);
+              }}
+            >
+              <Text style={{ color: "#fff", fontWeight: "600" }}>
+                Aplicar filtro
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.aplicarBtn, { backgroundColor: "#777" }]}
+              onPress={() => {
+                setFiltroCategoria("");
+                cargarRegistros();
+              }}
+            >
+              <Text style={{ color: "#fff", fontWeight: "600" }}>
+                Mostrar todos
+              </Text>
+            </TouchableOpacity>
+          </>
+        )}
       </View>
 
       {/* LISTA */}
       <ScrollView style={styles.lista}>
-        {registros.map(item => (
-          <View key={item.id} style={styles.item}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.itemTitulo}>{item.nombre}</Text>
-              <Text style={styles.itemSub}>{item.tipo} - {item.categoria} • {item.fecha}</Text>
-              <Text style={styles.itemDesc}>{item.descripcion}</Text>
+        {registros.map((item) => (
+          <View key={item.id.toString()} style={styles.card}>
+            <View style={styles.iconBox}>
+              <FontAwesome5
+                name={iconosCategoria[item.categoria]}
+                size={22}
+                color="#fff"
+              />
             </View>
 
-            <Text style={[styles.monto, { color: item.tipo === "ingreso" ? "green" : "red" }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.cardTitulo}>{item.nombre}</Text>
+              <Text style={styles.cardSub}>
+                {item.tipo} • {item.categoria} • {item.fecha}
+              </Text>
+              <Text style={styles.cardDesc}>{item.descripcion}</Text>
+            </View>
+
+            <Text
+              style={[
+                styles.cardMonto,
+                { color: item.tipo === "ingreso" ? "#00aa33" : "#cc0000" },
+              ]}
+            >
               ${item.monto}
             </Text>
 
             <TouchableOpacity onPress={() => abrirEditar(item)}>
-              <FontAwesome5 name="pen" size={18} color="#001A72" />
+              <FontAwesome5 name="pen" size={18} color="#003f91" />
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => eliminarRegistro(item.id)} style={{ marginLeft: 12 }}>
-              <FontAwesome5 name="trash" size={18} color="red" />
+            <TouchableOpacity
+              onPress={() => eliminarRegistro(item.id)}
+              style={{ marginLeft: 10 }}
+            >
+              <FontAwesome5 name="trash" size={18} color="#cc0000" />
             </TouchableOpacity>
           </View>
         ))}
       </ScrollView>
 
-      {/* BOTÓN AGREGAR */}
-      <TouchableOpacity style={styles.addButton} onPress={abrirAgregar}>
-        <Text style={styles.addText}>+</Text>
+      {/* BOTÓN + */}
+      <TouchableOpacity style={styles.addBtn} onPress={abrirAgregar}>
+        <Ionicons name="add" size={34} color="#fff" />
       </TouchableOpacity>
 
       {/* MODAL */}
-      <Modal visible={modalVisible} animationType="slide" transparent={true}>
+      <Modal visible={modalVisible} animationType="slide" transparent>
         <View style={styles.modalContainer}>
-          <View style={styles.modalView}>
-
+          <View style={styles.modalBox}>
             <Text style={styles.modalTitulo}>
-              {modalMode === "add" ? "Agregar transacción" : "Editar transacción"}
+              {modalMode === "add"
+                ? "Agregar Transacción"
+                : "Editar Transacción"}
             </Text>
 
-            {/* TIPO */}
-            <View style={styles.row}>
+            {/* Tipo */}
+            <View style={styles.tipoRow}>
               <TouchableOpacity
-                style={[styles.tipoBtn, tipo === "ingreso" && styles.tipoSeleccionado]}
+                style={[
+                  styles.tipoItem,
+                  tipo === "ingreso" && styles.tipoActivo,
+                ]}
                 onPress={() => setTipo("ingreso")}
               >
-                <Text style={styles.tipoText}>Ingreso</Text>
+                <MaterialIcons
+                  name="arrow-upward"
+                  size={20}
+                  color={tipo === "ingreso" ? "#fff" : "#003f91"}
+                />
+                <Text
+                  style={[
+                    styles.tipoText,
+                    tipo === "ingreso" && { color: "#fff" },
+                  ]}
+                >
+                  Ingreso
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.tipoBtn, tipo === "egreso" && styles.tipoSeleccionado]}
+                style={[
+                  styles.tipoItem,
+                  tipo === "egreso" && styles.tipoActivo,
+                ]}
                 onPress={() => setTipo("egreso")}
               >
-                <Text style={styles.tipoText}>Egreso</Text>
+                <MaterialIcons
+                  name="arrow-downward"
+                  size={20}
+                  color={tipo === "egreso" ? "#fff" : "#003f91"}
+                />
+                <Text
+                  style={[
+                    styles.tipoText,
+                    tipo === "egreso" && { color: "#fff" },
+                  ]}
+                >
+                  Egreso
+                </Text>
               </TouchableOpacity>
             </View>
 
-            {/* CATEGORÍAS */}
-            <Text style={{ marginTop: 10 }}>Categoría:</Text>
+            {/* Categorías */}
+            <Text style={styles.label}>Categoría</Text>
+
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {(tipo === "ingreso" ? categoriasIngresos : categoriasEgresos).map((cat, index) => (
+              {(tipo === "ingreso"
+                ? categoriasIngresos
+                : categoriasEgresos
+              ).map((cat) => (
                 <TouchableOpacity
-                  key={index}
+                  key={cat}
                   style={[
-                    styles.catBtn,
-                    categoria === cat && { backgroundColor: "#001A72" }
+                    styles.catModal,
+                    categoria === cat && styles.catModalActive,
                   ]}
                   onPress={() => setCategoria(cat)}
                 >
-                  <Text style={[
-                    styles.catText,
-                    categoria === cat && { color: "#fff" }
-                  ]}>
+                  <FontAwesome5
+                    name={iconosCategoria[cat]}
+                    size={14}
+                    color={categoria === cat ? "#fff" : "#003f91"}
+                  />
+                  <Text
+                    style={[
+                      styles.catModalText,
+                      categoria === cat && { color: "#fff" },
+                    ]}
+                  >
                     {cat}
                   </Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
 
-            {/* CAMPOS */}
-            <TextInput style={styles.modalInput} placeholder="Nombre" value={nombre} onChangeText={setNombre} />
-            <TextInput style={styles.modalInput} placeholder="Monto" keyboardType="numeric" value={monto} onChangeText={setMonto} />
-            <TextInput style={styles.modalInput} placeholder="Fecha (YYYY-MM-DD)" value={fecha} onChangeText={setFecha} />
-            <TextInput style={styles.modalInput} placeholder="Descripción" value={descripcion} onChangeText={setDescripcion} />
-
-            {/* BOTONES */}
-            <View style={styles.modalBotones}>
-              <TouchableOpacity style={[styles.btn, { backgroundColor: "#888" }]} onPress={() => setModalVisible(false)}>
-                <Text style={styles.btnText}>Cancelar</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={[styles.btn, { backgroundColor: "#001A72" }]} onPress={guardarRegistro}>
-                <Text style={[styles.btnText, { color: "#fff" }]}>Guardar</Text>
-              </TouchableOpacity>
+            {/* Inputs */}
+            <View style={styles.inputBox}>
+              <FontAwesome5 name="tag" size={16} color="#003f91" />
+              <TextInput
+                style={styles.input}
+                placeholder="Nombre"
+                value={nombre}
+                onChangeText={setNombre}
+              />
             </View>
 
+            <View style={styles.inputBox}>
+              <FontAwesome5 name="dollar-sign" size={16} color="#003f91" />
+              <TextInput
+                style={styles.input}
+                placeholder="Monto"
+                keyboardType="numeric"
+                value={monto}
+                onChangeText={setMonto}
+              />
+            </View>
+
+            <View style={styles.inputBox}>
+              <FontAwesome5 name="calendar" size={16} color="#003f91" />
+              <TextInput
+                style={styles.input}
+                placeholder="Fecha (DD/MM/YYYY)"
+                value={fecha}
+                onChangeText={manejarFecha}
+              />
+            </View>
+
+            <View style={styles.inputBox}>
+              <FontAwesome5 name="align-left" size={16} color="#003f91" />
+              <TextInput
+                style={styles.input}
+                placeholder="Descripción"
+                value={descripcion}
+                multiLine
+                onChangeText={setDescripcion}
+              />
+            </View>
+
+            {/* Botones */}
+            <View style={styles.modalBtns}>
+              <TouchableOpacity
+                style={[styles.modalBtn, { backgroundColor: "#999" }]}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={styles.modalBtnText}>Cancelar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalBtn, { backgroundColor: "#003f91" }]}
+                onPress={guardarRegistro}
+              >
+                <Text style={[styles.modalBtnText, { color: "#fff" }]}>
+                  Guardar
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -260,45 +436,188 @@ export default function RegScreen() {
   );
 }
 
+/* ─────────────────────────── ESTILOS ─────────────────────────── */
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
-  header: { paddingTop: 40, alignItems: "center" },
-  titulo: { fontSize: 26, fontWeight: "bold", color: "#001A72" },
 
-  filtros: { padding: 10 },
-  btnFiltro: { backgroundColor: "#001A72", padding: 10, borderRadius: 10, alignItems: "center", marginBottom: 10 },
+  header: { paddingTop: 50, alignItems: "center" },
+  titulo: { fontSize: 28, fontWeight: "bold", color: "#003f91" },
 
-  catBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: "#ddd",
-    borderRadius: 15,
-    marginRight: 8
+  filtrosBox: {
+    backgroundColor: "#eef4ff",
+    padding: 14,
+    margin: 10,
+    borderRadius: 20,
   },
-  catText: { fontSize: 14 },
 
-  lista: { padding: 10 },
-  item: { flexDirection: "row", backgroundColor: "#E9E9E9", padding: 15, borderRadius: 20, marginBottom: 10 },
-  itemTitulo: { fontSize: 18, fontWeight: "bold" },
-  itemSub: { color: "#444" },
-  itemDesc: { fontSize: 12, color: "#666" },
-  monto: { fontWeight: "bold", marginHorizontal: 12, fontSize: 17 },
+  toggleBtn: {
+    backgroundColor: "#003f91",
+    padding: 10,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  toggleText: { color: "#fff", fontWeight: "bold" },
 
-  addButton: { backgroundColor: "#001A72", width: "90%", padding: 15, borderRadius: 20, alignSelf: "center", alignItems: "center", marginBottom: 70 },
-  addText: { color: "#fff", fontSize: 30 },
+  filtroTitulo: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#003f91",
+    marginTop: 10,
+    marginBottom: 10,
+  },
 
-  modalContainer: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" },
-  modalView: { backgroundColor: "#fff", width: "85%", padding: 20, borderRadius: 20 },
+  filtroGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
 
-  modalTitulo: { fontSize: 20, fontWeight: "bold", textAlign: "center", marginBottom: 12 },
-  modalInput: { borderWidth: 1, borderColor: "#aaa", borderRadius: 10, padding: 10, marginBottom: 10 },
+  filtroItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: "#fff",
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: "#003f91",
+  },
+  filtroItemActivo: { backgroundColor: "#003f91" },
 
-  modalBotones: { flexDirection: "row", justifyContent: "space-between", marginTop: 10 },
-  btn: { flex: 1, padding: 12, borderRadius: 10, marginHorizontal: 5, alignItems: "center" },
-  btnText: { fontWeight: "bold" },
+  filtroText: { color: "#003f91", fontWeight: "600" },
 
-  row: { flexDirection: "row", justifyContent: "space-around", marginBottom: 10 },
-  tipoBtn: { padding: 10, borderRadius: 10, backgroundColor: "#ddd", width: "45%", alignItems: "center" },
-  tipoSeleccionado: { backgroundColor: "#001A72" },
-  tipoText: { color: "#000", fontWeight: "bold" }
+  aplicarBtn: {
+    marginTop: 10,
+    backgroundColor: "#003f91",
+    padding: 12,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+
+  lista: { paddingHorizontal: 14, marginBottom: 60 },
+
+  card: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 14,
+    backgroundColor: "#f3f6ff",
+    borderRadius: 18,
+    marginBottom: 12,
+    elevation: 2,
+  },
+
+  iconBox: {
+    width: 45,
+    height: 45,
+    backgroundColor: "#003f91",
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+
+  cardTitulo: { fontSize: 18, fontWeight: "bold", color: "#003f91" },
+  cardSub: { color: "#555" },
+  cardDesc: { color: "#777", fontSize: 12 },
+
+  cardMonto: { fontSize: 18, fontWeight: "bold", marginHorizontal: 10 },
+
+  addBtn: {
+    position: "absolute",
+    bottom: 80,
+    right: 20,
+    backgroundColor: "#003f91",
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  modalBox: {
+    backgroundColor: "#fff",
+    width: "88%",
+    borderRadius: 20,
+    padding: 20,
+  },
+
+  modalTitulo: {
+    fontSize: 22,
+    fontWeight: "bold",
+    textAlign: "center",
+    color: "#003f91",
+    marginBottom: 14,
+  },
+
+  tipoRow: { flexDirection: "row", justifyContent: "space-between" },
+
+  tipoItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#d9e4ff",
+    padding: 10,
+    borderRadius: 12,
+    width: "48%",
+    justifyContent: "center",
+  },
+
+  tipoActivo: { backgroundColor: "#003f91" },
+
+  tipoText: { fontWeight: "bold", color: "#003f91" },
+
+  label: { marginTop: 10, marginBottom: 6, fontWeight: "600" },
+
+  catModal: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: "#eef4ff",
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: "#003f91",
+    marginRight: 8,
+  },
+
+  catModalActive: { backgroundColor: "#003f91" },
+
+  catModalText: { marginLeft: 6, color: "#003f91", fontWeight: "600" },
+
+  inputBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#eef4ff",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: 10,
+  },
+
+  input: { flex: 1, marginLeft: 10, fontSize: 15 },
+
+  modalBtns: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 20,
+  },
+
+  modalBtn: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 12,
+    alignItems: "center",
+    marginHorizontal: 6,
+  },
+
+  modalBtnText: { fontWeight: "bold", color: "#fff" },
 });
