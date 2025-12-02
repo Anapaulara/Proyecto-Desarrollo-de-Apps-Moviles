@@ -28,10 +28,8 @@ class AuthService {
     console.log("✔ AuthService: base lista");
   }
 
-  // REGISTRO
   async registrarUsuario(userData) {
-    const { nombre, apellido, dia, mes, ano, genero, correo, contrasena } =
-      userData;
+    const { nombre, apellido, dia, mes, ano, genero, correo, contrasena } = userData;
 
     try {
       await this.db.runAsync(
@@ -48,7 +46,6 @@ class AuthService {
     }
   }
 
-  // LOGIN
   async loginUsuario(correo, contrasena) {
     try {
       const result = await this.db.getAllAsync(
@@ -63,7 +60,6 @@ class AuthService {
     }
   }
 
-  // BUSCAR CORREO
   async buscarCorreo(correo) {
     try {
       const result = await this.db.getAllAsync(
@@ -78,7 +74,6 @@ class AuthService {
     }
   }
 
-  // UPDATE NOMBRE + APELLIDO
   async actualizarNombreApellido(id, nombre, apellido) {
     try {
       await this.db.runAsync(
@@ -92,7 +87,6 @@ class AuthService {
     }
   }
 
-  // UPDATE CORREO
   async actualizarCorreo(id, correo) {
     try {
       await this.db.runAsync(
@@ -106,7 +100,6 @@ class AuthService {
     }
   }
 
-  // UPDATE CONTRASEÑA
   async actualizarPassword(correo, nuevaPass) {
     try {
       await this.db.runAsync(

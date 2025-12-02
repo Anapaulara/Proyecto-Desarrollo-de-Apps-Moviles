@@ -1,3 +1,4 @@
+// GraficasScreen.js
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -9,6 +10,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { PieChart, BarChart, LineChart } from "react-native-chart-kit";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import BottomMenu from "./BottomMenu";
 import TransaccionesService from "../src/services/TransaccionesService";
 
@@ -34,7 +36,7 @@ export default function GraficasScreen() {
   });
 
   const { width } = useWindowDimensions();
-  const chartWidth = width - 40;
+  const chartWidth = Math.max(300, width - 40);
 
   const coloresPie = [
     "#003f91",
@@ -50,93 +52,191 @@ export default function GraficasScreen() {
     cargarDatos();
   }, []);
 
+  // Helper: parse fecha flexible -> { dia, mes }
+  const extraerFecha = (fecha) => {
+    try {
+      if (!fecha || typeof fecha !== "string") return { dia: 0, mes: 0 };
+
+      // yyyy-mm-dd
+      if (fecha.includes("-")) {
+        const partes = fecha.split("-");
+        const mes = Number(partes[1]) || 0;
+        const dia = Number(partes[2]) || 0;
+        return { dia, mes };
+      }
+
+      // dd/mm/yyyy
+      if (fecha.includes("/")) {
+        const partes = fecha.split("/");
+        const dia = Number(partes[0]) || 0;
+        const mes = Number(partes[1]) || 0;
+        return { dia, mes };
+      }
+
+      // try timestamp number string
+      const n = Number(fecha);
+      if (!Number.isNaN(n)) {
+        const d = new Date(n);
+        return { dia: d.getDate(), mes: d.getMonth() + 1 };
+      }
+    } catch (e) {
+      // ignore parse error
+    }
+    return { dia: 0, mes: 0 };
+  };
+
+  // evita pasar arreglos vacíos a los charts (puede causar errores)
+  const safeChartArray = (arr) => {
+    if (!Array.isArray(arr) || arr.length === 0) return [0];
+    return arr;
+  };
+
+  const safeLabels = (arr) => {
+    if (!Array.isArray(arr) || arr.length === 0) return ["-"];
+    return arr;
+  };
+
   const cargarDatos = async () => {
-    const trans = await TransaccionesService.obtenerTodos();
-    const ingresos = {};
-    const egresos = {};
-
-    trans.forEach((t) => {
-      if (t.tipo === "ingreso") {
-        ingresos[t.categoria] = (ingresos[t.categoria] || 0) + t.monto;
-      } else if (t.tipo === "egreso") {
-        egresos[t.categoria] = (egresos[t.categoria] || 0) + t.monto;
+    try {
+      const sessionStr = await AsyncStorage.getItem("userSession");
+      if (!sessionStr) {
+        console.log("Graficas: no hay sesión (userSession).");
+        // limpiar estados para evitar crash charts
+        setPieIngresos([]);
+        setPieEgresos([]);
+        setMensualesIngresos([]);
+        setMensualesEgresos([]);
+        setEvolucionGastosDias([]);
+        setEvolucionGastosMontos([]);
+        setBalanceLabels([]);
+        setBalanceMes([]);
+        setResumen({ ingresos: 0, egresos: 0, balance: 0 });
+        return;
       }
-    });
 
-    setPieIngresos(
-      Object.keys(ingresos).map((cat, i) => ({
-        name: cat,
-        population: ingresos[cat],
-        color: coloresPie[i % coloresPie.length],
-        legendFontColor: "#7F7F7F",
-        legendFontSize: 12,
-      }))
-    );
+      const user = JSON.parse(sessionStr);
+      const user_id = user?.id;
+      if (!user_id) {
+        console.log("Graficas: user_id no encontrado en session.");
+        return;
+      }
 
-    setPieEgresos(
-      Object.keys(egresos).map((cat, i) => ({
-        name: cat,
-        population: egresos[cat],
-        color: coloresPie[i % coloresPie.length],
-        legendFontColor: "#7F7F7F",
-        legendFontSize: 12,
-      }))
-    );
+      // solicitar transacciones del usuario
+      const trans = (await TransaccionesService.obtenerTodos(user_id)) || [];
 
-    const mesActual = new Date().getMonth() + 1;
+      // Categorías para pie charts
+      const ingresosObj = {};
+      const egresosObj = {};
 
-    const ingresosMes = [];
-    const egresosMes = [];
+      // Variables para mes actual
+      const mesActual = new Date().getMonth() + 1;
+      const ingresosMesArr = [];
+      const egresosMesArr = [];
+      const gastosPorDia = {};
 
-    const gastosPorDia = {};
+      // Balance por mes (obj {mes: {ingresos, egresos}})
+      const balance = {};
 
-    trans.forEach((t) => {
-      const [dia, mes] = t.fecha.split("/").map(Number);
+      // recorrer transacciones con validaciones
+      trans.forEach((t) => {
+        if (!t) return;
+        const tipo = String(t.tipo || "").toLowerCase();
+        const monto = Number(t.monto || 0);
+        const categoria = t.categoria || "Otros";
 
-      if (mes === mesActual) {
-        if (t.tipo === "ingreso") ingresosMes.push(t.monto);
-        if (t.tipo === "egreso") egresosMes.push(t.monto);
+        // llenar categorías
+        if (tipo === "ingreso") ingresosObj[categoria] = (ingresosObj[categoria] || 0) + monto;
+        else if (tipo === "egreso") egresosObj[categoria] = (egresosObj[categoria] || 0) + monto;
 
-        if (t.tipo === "egreso") {
-          gastosPorDia[dia] = (gastosPorDia[dia] || 0) + t.monto;
+        // extraer fecha segura
+        const { dia, mes } = extraerFecha(t.fecha);
+
+        // datos del mes actual
+        if (mes === mesActual) {
+          if (tipo === "ingreso") ingresosMesArr.push(monto);
+          if (tipo === "egreso") egresosMesArr.push(monto);
+          if (tipo === "egreso") {
+            gastosPorDia[dia] = (gastosPorDia[dia] || 0) + monto;
+          }
         }
+
+        // acumulado para balance mensual (usar mes > 0)
+        if (mes > 0) {
+          if (!balance[mes]) balance[mes] = { ingresos: 0, egresos: 0 };
+          if (tipo === "ingreso") balance[mes].ingresos += monto;
+          else if (tipo === "egreso") balance[mes].egresos += monto;
+        }
+      });
+
+      // preparar pie data (filtrar 0)
+      const pieIn = Object.keys(ingresosObj)
+        .filter((k) => ingresosObj[k] > 0)
+        .map((cat, i) => ({
+          name: cat,
+          population: ingresosObj[cat],
+          color: coloresPie[i % coloresPie.length],
+          legendFontColor: "#7F7F7F",
+          legendFontSize: 12,
+        }));
+
+      const pieEg = Object.keys(egresosObj)
+        .filter((k) => egresosObj[k] > 0)
+        .map((cat, i) => ({
+          name: cat,
+          population: egresosObj[cat],
+          color: coloresPie[i % coloresPie.length],
+          legendFontColor: "#7F7F7F",
+          legendFontSize: 12,
+        }));
+
+      setPieIngresos(pieIn);
+      setPieEgresos(pieEg);
+
+      // arrays para charts por mes
+      setMensualesIngresos(ingresosMesArr);
+      setMensualesEgresos(egresosMesArr);
+
+      const dias = Object.keys(gastosPorDia)
+        .map(Number)
+        .filter((d) => !Number.isNaN(d))
+        .sort((a, b) => a - b);
+
+      setEvolucionGastosDias(dias.map(String));
+      setEvolucionGastosMontos(dias.map((d) => gastosPorDia[d]));
+
+      // resumen
+      const totalIn = ingresosMesArr.reduce((a, b) => a + b, 0);
+      const totalEg = egresosMesArr.reduce((a, b) => a + b, 0);
+
+      setResumen({ ingresos: totalIn, egresos: totalEg, balance: totalIn - totalEg });
+
+      // balance mensual: ordenar meses y tomar últimos 4
+      const mesesOrdenados = Object.keys(balance)
+        .map(Number)
+        .filter((m) => m > 0)
+        .sort((a, b) => a - b);
+
+      const ult4 = mesesOrdenados.slice(-4);
+      if (ult4.length === 0) {
+        setBalanceLabels(["-"]);
+        setBalanceMes([0]);
+      } else {
+        setBalanceLabels(ult4.map((m) => `Mes ${m}`));
+        setBalanceMes(ult4.map((m) => (balance[m] ? balance[m].ingresos - balance[m].egresos : 0)));
       }
-    });
-
-    setMensualesIngresos(ingresosMes);
-    setMensualesEgresos(egresosMes);
-
-    // Evolución diaria gastos
-    const dias = Object.keys(gastosPorDia).sort((a, b) => a - b);
-    setEvolucionGastosDias(dias.map((d) => d.toString()));
-    setEvolucionGastosMontos(dias.map((d) => gastosPorDia[d]));
-
-    // Dashboard resumen
-    const totalIn = ingresosMes.reduce((a, b) => a + b, 0);
-    const totalEg = egresosMes.reduce((a, b) => a + b, 0);
-
-    setResumen({
-      ingresos: totalIn,
-      egresos: totalEg,
-      balance: totalIn - totalEg,
-    });
-
-    // Balance mensual (últimos 4 meses)
-    const balance = {};
-    trans.forEach((t) => {
-      const partes = t.fecha.split("/");
-      const mes = Number(partes[1]);
-
-      if (!balance[mes]) balance[mes] = { ingresos: 0, egresos: 0 };
-
-      if (t.tipo === "ingreso") balance[mes].ingresos += t.monto;
-      else balance[mes].egresos += t.monto;
-    });
-
-    const sorted = Object.keys(balance).slice(-4).map(Number);
-
-    setBalanceLabels(sorted.map((m) => `Mes ${m}`));
-    setBalanceMes(sorted.map((m) => balance[m].ingresos - balance[m].egresos));
+    } catch (err) {
+      console.log("❌ ERROR CARGAR GRAFICAS:", err);
+      // asegurar estados válidos para que los charts no fallen
+      setPieIngresos([]);
+      setPieEgresos([]);
+      setMensualesIngresos([]);
+      setMensualesEgresos([]);
+      setEvolucionGastosDias([]);
+      setEvolucionGastosMontos([]);
+      setBalanceLabels([]);
+      setBalanceMes([]);
+      setResumen({ ingresos: 0, egresos: 0, balance: 0 });
+    }
   };
 
   const chartConfig = {
@@ -158,49 +258,29 @@ export default function GraficasScreen() {
     <View style={styles.container}>
       <Text style={styles.title}>Gráficas</Text>
 
-      {/* SWITCH */}
       <View style={styles.tabContainer}>
         <TouchableOpacity
           style={[styles.tab, vista === "categoria" && styles.tabActive]}
           onPress={() => setVista("categoria")}
         >
-          <Ionicons
-            name="pie-chart-outline"
-            size={18}
-            color={vista === "categoria" ? "#fff" : "#003f91"}
-          />
-          <Text
-            style={[styles.tabText, vista === "categoria" && styles.tabTextActive]}
-          >
-            Categoría
-          </Text>
+          <Ionicons name="pie-chart-outline" size={18} color={vista === "categoria" ? "#fff" : "#003f91"} />
+          <Text style={[styles.tabText, vista === "categoria" && styles.tabTextActive]}>Categoría</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.tab, vista === "mes" && styles.tabActive]}
-          onPress={() => setVista("mes")}
-        >
-          <Ionicons
-            name="stats-chart-outline"
-            size={18}
-            color={vista === "mes" ? "#fff" : "#003f91"}
-          />
-          <Text style={[styles.tabText, vista === "mes" && styles.tabTextActive]}>
-            Mes
-          </Text>
+        <TouchableOpacity style={[styles.tab, vista === "mes" && styles.tabActive]} onPress={() => setVista("mes")}>
+          <Ionicons name="stats-chart-outline" size={18} color={vista === "mes" ? "#fff" : "#003f91"} />
+          <Text style={[styles.tabText, vista === "mes" && styles.tabTextActive]}>Mes</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
-        {/* ===========================
-              PIE CATEGORÍA
-           =========================== */}
+        {/* CATEGORÍA */}
         {vista === "categoria" && (
           <>
             <View style={styles.grafContainer}>
               <Text style={styles.chartTitle}>Ingresos por Categoría</Text>
               <PieChart
-                data={pieIngresos}
+                data={pieIngresos.length ? pieIngresos : [{ name: "-", population: 1, color: "#eee", legendFontColor: "#7F7F7F", legendFontSize: 12 }]}
                 width={chartWidth}
                 height={230}
                 accessor="population"
@@ -213,7 +293,7 @@ export default function GraficasScreen() {
             <View style={styles.grafContainer}>
               <Text style={styles.chartTitle}>Egresos por Categoría</Text>
               <PieChart
-                data={pieEgresos}
+                data={pieEgresos.length ? pieEgresos : [{ name: "-", population: 1, color: "#eee", legendFontColor: "#7F7F7F", legendFontSize: 12 }]}
                 width={chartWidth}
                 height={230}
                 accessor="population"
@@ -225,51 +305,46 @@ export default function GraficasScreen() {
           </>
         )}
 
-        {/* ===========================
-              MES (todas tus nuevas gráficas)
-           =========================== */}
+        {/* MES */}
         {vista === "mes" && (
           <>
-            {/* DASHBOARD */}
             <View style={styles.cardsContainer}>
               <View style={[styles.card, { backgroundColor: "#cde7ff" }]}>
                 <Text style={styles.cardTitle}>Ingresos</Text>
-                <Text style={styles.cardNumber}>${resumen.ingresos}</Text>
+                <Text style={styles.cardNumber}>${resumen.ingresos.toFixed(2)}</Text>
               </View>
 
               <View style={[styles.card, { backgroundColor: "#ffd6d6" }]}>
                 <Text style={styles.cardTitle}>Egresos</Text>
-                <Text style={styles.cardNumber}>${resumen.egresos}</Text>
+                <Text style={styles.cardNumber}>${resumen.egresos.toFixed(2)}</Text>
               </View>
 
               <View style={[styles.card, { backgroundColor: "#d9ffdc" }]}>
                 <Text style={styles.cardTitle}>Balance</Text>
-                <Text style={styles.cardNumber}>${resumen.balance}</Text>
+                <Text style={styles.cardNumber}>${resumen.balance.toFixed(2)}</Text>
               </View>
             </View>
 
-            {/* COMPARATIVA INGRESOS VS EGRESOS */}
             <View style={styles.grafContainer}>
               <Text style={styles.chartTitle}>Ingresos VS Egresos</Text>
               <BarChart
                 data={{
                   labels: ["Ingresos", "Egresos"],
-                  datasets: [{ data: [resumen.ingresos, resumen.egresos] }],
+                  datasets: [{ data: [resumen.ingresos || 0, resumen.egresos || 0] }],
                 }}
                 width={chartWidth}
                 height={220}
                 chartConfig={chartConfig}
-                fromZero={true}
+                fromZero
               />
             </View>
 
-            {/* GRÁFICA EVOLUCIÓN DE GASTOS */}
             <View style={styles.grafContainer}>
               <Text style={styles.chartTitle}>Evolución diaria de Gastos</Text>
               <LineChart
                 data={{
-                  labels: evolucionGastosDias,
-                  datasets: [{ data: evolucionGastosMontos }],
+                  labels: evolucionGastosDias.length ? evolucionGastosDias : ["-"],
+                  datasets: [{ data: evolucionGastosMontos.length ? evolucionGastosMontos : [0] }],
                 }}
                 width={chartWidth}
                 height={220}
@@ -279,13 +354,12 @@ export default function GraficasScreen() {
               />
             </View>
 
-            {/* GRÁFICA BALANCE MENSUAL */}
             <View style={styles.grafContainer}>
               <Text style={styles.chartTitle}>Balance mensual</Text>
               <LineChart
                 data={{
-                  labels: balanceLabels,
-                  datasets: [{ data: balanceMes }],
+                  labels: balanceLabels.length ? balanceLabels : ["-"],
+                  datasets: [{ data: balanceMes.length ? balanceMes : [0] }],
                 }}
                 width={chartWidth}
                 height={220}
@@ -295,13 +369,12 @@ export default function GraficasScreen() {
               />
             </View>
 
-            {/* BARRAS INGRESOS */}
             <View style={styles.grafContainer}>
               <Text style={styles.chartTitle}>Ingresos del Mes</Text>
               <BarChart
                 data={{
-                  labels: mensualesIngresos.map((_, i) => `#${i + 1}`),
-                  datasets: [{ data: mensualesIngresos }],
+                  labels: (mensualesIngresos.length ? mensualesIngresos : [0]).map((_, i) => `#${i + 1}`),
+                  datasets: [{ data: safeChartArray(mensualesIngresos) }],
                 }}
                 width={chartWidth}
                 height={220}
@@ -311,13 +384,12 @@ export default function GraficasScreen() {
               />
             </View>
 
-            {/* BARRAS EGRESOS */}
             <View style={styles.grafContainer}>
               <Text style={styles.chartTitle}>Egresos del Mes</Text>
               <BarChart
                 data={{
-                  labels: mensualesEgresos.map((_, i) => `#${i + 1}`),
-                  datasets: [{ data: mensualesEgresos }],
+                  labels: (mensualesEgresos.length ? mensualesEgresos : [0]).map((_, i) => `#${i + 1}`),
+                  datasets: [{ data: safeChartArray(mensualesEgresos) }],
                 }}
                 width={chartWidth}
                 height={220}

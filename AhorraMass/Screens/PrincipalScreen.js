@@ -8,7 +8,9 @@ import AuthService from "../src/services/AuthService";
 
 export default function PrincipalScreen() {
   const [usuario, setUsuario] = useState("Usuario");
-  
+
+  const [userId, setUserId] = useState(null);
+
   const [saldo, setSaldo] = useState(0);
   const [ingresos, setIngresos] = useState(0);
   const [egresos, setEgresos] = useState(0);
@@ -20,11 +22,16 @@ export default function PrincipalScreen() {
 
   useEffect(() => {
     cargarUsuarioReal();
-    cargarResumen();
   }, []);
 
+  useEffect(() => {
+    if (userId) {
+      cargarResumen();
+    }
+  }, [userId]);
+
   // ================================
-  // ✔ Cargar usuario REAL DEL LOGIN
+  // ✔ Cargar usuario REAL del login
   // ================================
   const cargarUsuarioReal = async () => {
     try {
@@ -35,16 +42,19 @@ export default function PrincipalScreen() {
       const user = JSON.parse(data);
 
       setUsuario(user.nombre);
+      setUserId(user.id); // ⭐ MUY IMPORTANTE
     } catch (err) {
       console.log("❌ ERROR CARGAR USUARIO:", err);
     }
   };
 
   // ================================
-  // ✔ Resumen transacciones
+  // ✔ Cargar resumen por user_id
   // ================================
   const cargarResumen = async () => {
-    const datos = await TransaccionesService.obtenerTodos();
+    if (!userId) return;
+
+    const datos = await TransaccionesService.obtenerTodos(userId);
 
     let sumaIngresos = 0;
     let sumaEgresos = 0;
@@ -60,8 +70,10 @@ export default function PrincipalScreen() {
     setAhorro((sumaIngresos - sumaEgresos) * 0.10);
     setLimite(500);
 
+    // Últimas novedades
     setNovedades(datos.slice(-5).reverse());
 
+    // Compras fuertes
     const fuertes = datos.filter(
       (t) => t.tipo === "egreso" && t.monto >= 2000
     );
@@ -71,9 +83,10 @@ export default function PrincipalScreen() {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        
         <View style={styles.header}>
-          <Text style={styles.titulo}>Hola, <Text style={styles.usuario}>{usuario}</Text>.</Text>
+          <Text style={styles.titulo}>
+            Hola, <Text style={styles.usuario}>{usuario}</Text>.
+          </Text>
         </View>
 
         <View style={styles.saldoActualCard}>
@@ -84,7 +97,9 @@ export default function PrincipalScreen() {
         <Text style={styles.subtituloMetas}>Mis Compras Fuertes.</Text>
 
         {comprasFuertes.length === 0 && (
-          <Text style={styles.noCompras}>No tienes compras fuertes aún.</Text>
+          <Text style={styles.noCompras}>
+            No tienes compras fuertes aún.
+          </Text>
         )}
 
         {comprasFuertes.map((c) => (
@@ -129,7 +144,6 @@ export default function PrincipalScreen() {
             </Text>
           </View>
         ))}
-
       </ScrollView>
 
       <BottomMenu />
@@ -142,7 +156,7 @@ const styles = StyleSheet.create({
   scrollContent: { alignItems: "center", paddingTop: 40, paddingBottom: 100 },
 
   header: { width: "90%", marginBottom: 20 },
-  
+
   titulo: {
     fontFamily: "Arial",
     fontWeight: "bold",
@@ -170,7 +184,7 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
 
-  noCompras: { width: "90%", textAlign: "left", color: "#777" },
+  noCompras: { width: "90%", color: "#777" },
 
   Contenido: {
     width: "90%",

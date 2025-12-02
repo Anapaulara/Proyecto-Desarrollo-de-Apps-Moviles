@@ -18,9 +18,16 @@ export default function LogInScreen({ navigation }) {
   const [contrasena, setContrasena] = useState("");
   const [showPass, setShowPass] = useState(false);
 
-  // Inicializar BD
+  // Inicializar BD solo una vez
   useEffect(() => {
-    AuthService.initialize();
+    const init = async () => {
+      try {
+        await AuthService.initialize();
+      } catch (e) {
+        console.log("Error iniciando AuthService:", e);
+      }
+    };
+    init();
   }, []);
 
   const iniciarSesion = async () => {
@@ -37,6 +44,7 @@ export default function LogInScreen({ navigation }) {
       return;
     }
 
+    // ✔ Guardar sesión del usuario actual
     try {
       await AsyncStorage.setItem("userSession", JSON.stringify(usuario));
       console.log("✔ Sesión guardada:", usuario);
@@ -45,7 +53,7 @@ export default function LogInScreen({ navigation }) {
     }
 
     Alert.alert("Bienvenido", `${usuario.nombre}, sesión iniciada.`);
-    navigation.navigate("Principal");
+    navigation.replace("Principal"); // replace evita volver al login con back
   };
 
   return (

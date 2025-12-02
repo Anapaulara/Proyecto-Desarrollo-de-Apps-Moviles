@@ -11,10 +11,11 @@ import {
 } from "react-native";
 
 import { FontAwesome5, Ionicons, MaterialIcons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import BottomMenu from "./BottomMenu";
 import TransaccionesService from "../src/services/TransaccionesService";
 
-// ICONOS POR CATEGORÍA
+/* ─────────── ICONOS ─────────── */
 const iconosCategoria = {
   Sueldo: "briefcase",
   Negocio: "store",
@@ -41,7 +42,8 @@ const categoriasEgresos = [
   "OtrosEgresos",
 ];
 
-export default function RegScreens() {
+export default function RegScreens({ route }) {
+  const [userId, setUserId] = useState(null);
   const [registros, setRegistros] = useState([]);
 
   const [modalVisible, setModalVisible] = useState(false);
@@ -58,13 +60,39 @@ export default function RegScreens() {
   const [filtroCategoria, setFiltroCategoria] = useState("");
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
 
+  /* ─────────── CARGAR USER_ID ─────────── */
   useEffect(() => {
-    TransaccionesService.initialize();
-    cargarRegistros();
+    cargarUsuario();
   }, []);
 
-  const cargarRegistros = async () => {
-    const data = await TransaccionesService.obtenerTodos();
+  const cargarUsuario = async () => {
+    try {
+      // si viene desde navegación directa con parámetros
+      if (route?.params?.user_id) {
+        setUserId(route.params.user_id);
+        cargarRegistros(route.params.user_id);
+        return;
+      }
+
+      // si viene desde menú o sin params → cargar desde AsyncStorage
+      const sessionStr = await AsyncStorage.getItem("userSession");
+      const session = JSON.parse(sessionStr);
+
+      if (session?.id) {
+        setUserId(session.id);
+        cargarRegistros(session.id);
+      } else {
+        Alert.alert("Error", "No se encontró la sesión del usuario.");
+      }
+    } catch (e) {
+      console.log("Error cargando usuario", e);
+    }
+  };
+
+  /* ─────────── CARGAR REGISTROS ─────────── */
+  const cargarRegistros = async (id) => {
+    if (!id) return;
+    const data = await TransaccionesService.obtenerTodos(id);
     setRegistros(data);
   };
 
@@ -92,13 +120,19 @@ export default function RegScreens() {
     setModalVisible(true);
   };
 
+  /* ─────────── GUARDAR REGISTRO ─────────── */
   const guardarRegistro = async () => {
     if (!nombre || !monto || !categoria || !fecha) {
       return Alert.alert("Error", "Completa todos los campos obligatorios.");
     }
 
+    if (!userId) {
+      return Alert.alert("Error", "No se encontró el usuario.");
+    }
+
     if (modalMode === "add") {
       await TransaccionesService.agregar(
+        userId,
         tipo,
         categoria,
         nombre,
@@ -119,7 +153,7 @@ export default function RegScreens() {
     }
 
     setModalVisible(false);
-    cargarRegistros();
+    cargarRegistros(userId);
   };
 
   const eliminarRegistro = (id) => {
@@ -130,7 +164,7 @@ export default function RegScreens() {
         style: "destructive",
         onPress: async () => {
           await TransaccionesService.eliminar(id);
-          cargarRegistros();
+          cargarRegistros(userId);
         },
       },
     ]);
@@ -147,6 +181,7 @@ export default function RegScreens() {
     setFecha(limpio);
   };
 
+  /* ─────────── UI ─────────── */
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -200,11 +235,14 @@ export default function RegScreens() {
             <TouchableOpacity
               style={styles.aplicarBtn}
               onPress={async () => {
-                if (!filtroCategoria) return cargarRegistros();
+                if (!filtroCategoria) return cargarRegistros(userId);
+
                 const data =
                   await TransaccionesService.filtrarPorCategoria(
-                    filtroCategoria
+                    filtroCategoria,
+                    userId
                   );
+
                 setRegistros(data);
               }}
             >
@@ -217,7 +255,7 @@ export default function RegScreens() {
               style={[styles.aplicarBtn, { backgroundColor: "#777" }]}
               onPress={() => {
                 setFiltroCategoria("");
-                cargarRegistros();
+                cargarRegistros(userId);
               }}
             >
               <Text style={{ color: "#fff", fontWeight: "600" }}>
@@ -436,8 +474,7 @@ export default function RegScreens() {
   );
 }
 
-/* ─────────────────────────── ESTILOS ─────────────────────────── */
-
+/* ESTILOS */
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
 

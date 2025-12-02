@@ -8,6 +8,7 @@ const TransaccionesService = {
       await db.runAsync(`
         CREATE TABLE IF NOT EXISTS transacciones (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER,
           tipo TEXT,
           categoria TEXT,
           nombre TEXT,
@@ -17,46 +18,113 @@ const TransaccionesService = {
         );
       `);
     });
+
+    console.log("✔ BD Transacciones lista");
   },
 
-  // ⭐ AGREGAR
-  agregar: async (tipo, categoria, nombre, monto, fecha, descripcion) => {
-    return await db.runAsync(
-      `INSERT INTO transacciones (tipo, categoria, nombre, monto, fecha, descripcion)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [tipo, categoria, nombre, monto, fecha, descripcion]
-    );
+  // ==================================
+  // INSERTAR (firma corregida de 7 params)
+  // ==================================
+  agregar: async (
+    user_id,
+    tipo,
+    categoria,
+    nombre,
+    monto,
+    fecha,
+    descripcion
+  ) => {
+    try {
+      await db.runAsync(
+        `INSERT INTO transacciones 
+         (user_id, tipo, categoria, nombre, monto, fecha, descripcion)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [user_id, tipo, categoria, nombre, monto, fecha, descripcion]
+      );
+      return true;
+    } catch (err) {
+      console.log("❌ ERROR insert:", err);
+      return false;
+    }
   },
 
-  // ⭐ EDITAR
+  // ==================================
+  // EDITAR
+  // ==================================
   editar: async (id, tipo, categoria, nombre, monto, fecha, descripcion) => {
-    return await db.runAsync(
-      `UPDATE transacciones 
-       SET tipo=?, categoria=?, nombre=?, monto=?, fecha=?, descripcion=? 
-       WHERE id=?`,
-      [tipo, categoria, nombre, monto, fecha, descripcion, id]
-    );
+    try {
+      return await db.runAsync(
+        `UPDATE transacciones 
+         SET tipo=?, categoria=?, nombre=?, monto=?, fecha=?, descripcion=? 
+         WHERE id=?`,
+        [tipo, categoria, nombre, monto, fecha, descripcion, id]
+      );
+    } catch (err) {
+      console.log("❌ ERROR editar:", err);
+    }
   },
 
-  // ⭐ ELIMINAR
+  // ==================================
+  // ELIMINAR
+  // ==================================
   eliminar: async (id) => {
-    return await db.runAsync(`DELETE FROM transacciones WHERE id=?`, [id]);
+    try {
+      return await db.runAsync(`DELETE FROM transacciones WHERE id=?`, [id]);
+    } catch (err) {
+      console.log("❌ ERROR eliminar:", err);
+    }
   },
 
-  // ⭐ OBTENER TODOS
-  obtenerTodos: async () => {
-    return await db.getAllAsync(
-      `SELECT * FROM transacciones ORDER BY fecha DESC`
-    );
+  // ==================================
+  // OBTENER TODAS
+  // ==================================
+  obtenerTodos: async (user_id) => {
+    try {
+      return await db.getAllAsync(
+        `SELECT * FROM transacciones 
+         WHERE user_id = ? 
+         ORDER BY id DESC`,
+        [user_id]
+      );
+    } catch (err) {
+      console.log("❌ ERROR obtenerTodos:", err);
+      return [];
+    }
   },
 
-  // ⭐ FILTRAR POR CATEGORÍA
-  filtrarPorCategoria: async (categoria) => {
-    return await db.getAllAsync(
-      `SELECT * FROM transacciones WHERE categoria=? ORDER BY fecha DESC`,
-      [categoria]
-    );
-  }
+  // ==================================
+  // OBTENER POR CATEGORÍA
+  // ==================================
+  filtrarPorCategoria: async (categoria, user_id) => {
+    try {
+      return await db.getAllAsync(
+        `SELECT * FROM transacciones 
+         WHERE categoria = ? AND user_id = ?
+         ORDER BY id DESC`,
+        [categoria, user_id]
+      );
+    } catch (err) {
+      console.log("❌ ERROR filtrarPorCategoria:", err);
+      return [];
+    }
+  },
+
+  // ==================================
+  // OBTENER POR MES (corregido)
+  // ==================================
+  obtenerPorMes: async (mes, user_id) => {
+    try {
+      return await db.getAllAsync(
+        `SELECT * FROM transacciones 
+        WHERE user_id = ?
+        AND substr(fecha, 4, 2) = ?`,
+        [user_id, mes.padStart(2, "0")]
+      );
+    } catch (err) {
+      console.log("❌ ERROR obtenerPorMes:", err);
+      return [];
+    }
+  },
 };
 
 export default TransaccionesService;
