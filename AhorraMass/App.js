@@ -14,28 +14,17 @@ import RecuperarPasswordScreen from "./Screens/RecuperarPasswordScreen";
 import TarjetasBancosScreen from './Screens/TarjetasBancosScreen';
 import PrivacidadDatosScreen from './Screens/PrivacidadDatosScreen';
 
+import TransaccionesService from "./src/services/TransaccionesService";
 import AuthService from "./src/services/AuthService";
-import * as SQLite from "expo-sqlite";
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
   useEffect(() => {
-    async function init() {
-      try {
-        // Borrar base de datos SOLO una vez
-/*         await SQLite.deleteDatabaseAsync("auth.db");
-        await SQLite.deleteDatabaseAsync("miDB.db");
- */
-        // Inicializar base con tablas nuevas
-        await AuthService.initialize();
-        console.log("BASE INICIALIZADA");
-      } catch (error) {
-        console.log("ERROR INICIALIZANDO DB:", error);
-      }
-    }
-
-    init();
+    // inicializar DBs (sync API)
+    TransaccionesService.initialize();
+    AuthService.initialize();
+    console.log("Bases inicializadas");
   }, []);
 
   return (
