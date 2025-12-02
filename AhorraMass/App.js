@@ -2,6 +2,8 @@ import React, { useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
+import { UserProvider } from "./src/services/UserContext";
+
 import LogInScreen from "./Screens/LogInScreen";
 import SignInScreen from "./Screens/SignInScreen";
 import PrincipalScreen from "./Screens/PrincipalScreen";
@@ -28,6 +30,7 @@ export default function App() {
   }, []);
 
   return (
+    <UserProvider>
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="LogIn" component={LogInScreen} />
@@ -43,5 +46,6 @@ export default function App() {
         <Stack.Screen name="PrivacidadDatos" component={PrivacidadDatosScreen} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
+    </UserProvider>
   );
 }

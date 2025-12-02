@@ -10,8 +10,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-
-import GlobalStyles from "../Styles/GlobalStyles";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import AuthService from "../src/services/AuthService";
 
 export default function LogInScreen({ navigation }) {
@@ -19,27 +18,33 @@ export default function LogInScreen({ navigation }) {
   const [contrasena, setContrasena] = useState("");
   const [showPass, setShowPass] = useState(false);
 
+  // Inicializar BD
   useEffect(() => {
     AuthService.initialize();
   }, []);
 
   const iniciarSesion = async () => {
-    if (!mail || !contrasena) {
+    if (!mail.trim() || !contrasena.trim()) {
       Alert.alert("Error", "Completa todos los campos.");
       return;
     }
 
-    const usuario = await AuthService.loginUsuario(
-      mail.trim().toLowerCase(),
-      contrasena
-    );
+    const correoClean = mail.trim().toLowerCase();
+    const usuario = await AuthService.loginUsuario(correoClean, contrasena);
 
-    if (!usuario || usuario.length === 0) {
+    if (!usuario) {
       Alert.alert("Error", "Correo o contraseña incorrectos.");
       return;
     }
 
-    Alert.alert("Bienvenido", "Inicio de sesión exitoso.");
+    try {
+      await AsyncStorage.setItem("userSession", JSON.stringify(usuario));
+      console.log("✔ Sesión guardada:", usuario);
+    } catch (e) {
+      console.log("Error guardando sesión", e);
+    }
+
+    Alert.alert("Bienvenido", `${usuario.nombre}, sesión iniciada.`);
     navigation.navigate("Principal");
   };
 
@@ -52,6 +57,7 @@ export default function LogInScreen({ navigation }) {
         <Text style={styles.splashTitle}>Inicio de sesión</Text>
 
         <Text style={styles.splashSubtitle}>Correo:</Text>
+
         <TextInput
           style={styles.input}
           placeholder="correo@example.com"
@@ -85,7 +91,6 @@ export default function LogInScreen({ navigation }) {
         <Button title="Iniciar sesión" color="#0f1344" onPress={iniciarSesion} />
       </View>
 
-      {/* CONECTAR A PANTALLA RECUPERAR */}
       <Pressable onPress={() => navigation.navigate("Recuperar")}>
         <Text style={styles.link}>¿No recuerdas tu contraseña?</Text>
       </Pressable>
