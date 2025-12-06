@@ -39,8 +39,19 @@ export default function LogInScreen({ navigation }) {
       return;
     }
 
+    await AuthService.setSession(
+      // Ensure we treat the result correctly. getAllAsync returns array. 
+      // result[0] is the user object.
+      // In AuthService.loginUsuario, we returned result[0] or null.
+      // So 'usuario' here is the User Object.
+      usuario
+    );
+
     Alert.alert("Bienvenido", "Inicio de sesión exitoso.");
-    navigation.navigate("Principal");
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Main' }],
+    });
   };
 
   return (

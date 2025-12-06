@@ -1,27 +1,66 @@
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import BottomMenu from "./BottomMenu";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { useNavigation, useIsFocused } from "@react-navigation/native";
 import GoalCard from "./GoalCard";
+import AuthService from "../src/services/AuthService";
+import TransaccionesService from "../src/services/TransaccionesService";
 
 export default function PrincipalScreen() {
+  const isFocused = useIsFocused();
+  const [load, setLoad] = useState(true);
+  const [user, setUser] = useState({ nombre: "User" });
+  const [balance, setBalance] = useState({ ingresos: 0, egresos: 0, total: 0 });
+
+  const loadData = async () => {
+    setLoad(true);
+    try {
+      const u = await AuthService.getSession();
+      if (u) setUser(u);
+
+      const bal = await TransaccionesService.obtenerBalance();
+      setBalance(bal);
+
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoad(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isFocused) {
+      loadData();
+    }
+  }, [isFocused]);
+
+  if (load) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#000033" />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={styles.titulo}>Hola, User.</Text>
+          <Text style={styles.titulo}>Hola, {user.nombre}.</Text>
         </View>
         <View style={styles.saldoActualCard}>
           <Text style={styles.saldoLabel}>Saldo Actual</Text>
-          <Text style={styles.saldoMonto}>$1,852.00</Text>
+          <Text style={[styles.saldoMonto, { color: balance.total >= 0 ? '#0D074D' : '#D32F2F' }]}>
+            ${balance.total.toFixed(2)}
+          </Text>
         </View>
 
-        <Text style={styles.subtituloMetas}>Mis Compras Fuertes.</Text>
+        <Text style={styles.subtituloMetas}>Mis Compras Fuertes (Demo)</Text>
         <GoalCard
           title="Sala Nueva"
           currentAmount="2500"
           targetAmount="5,000"
           percentage={50}
-
         />
 
         <GoalCard
@@ -29,42 +68,25 @@ export default function PrincipalScreen() {
           currentAmount="100,000"
           targetAmount="1,070,200"
           percentage={9.34}
-
         />
 
         <View style={styles.Contenido}>
           <View style={styles.ContenidoIngresos}>
             <Text style={styles.txtIngresos}>Ingresos</Text>
-            <Text style={styles.NoIngresos}>$500.00</Text>
+            <Text style={styles.NoIngresos}>${balance.ingresos.toFixed(2)}</Text>
           </View>
           <View style={styles.ContenidoEgresos}>
             <Text style={styles.txtEgresos}>Egresos</Text>
-            <Text style={styles.NoEgresos}>$150.00</Text>
-          </View>
-          <View style={styles.ContenidoPred}>
-            <Text style={styles.txtPred}>Ahorros</Text>
-            <Text style={styles.NoPred}>$100.00</Text>
-          </View>
-          <View style={styles.ContenidoPred}>
-            <Text style={styles.txtPred}>Límite</Text>
-            <Text style={styles.NoPred}>$50.00</Text>
+            <Text style={styles.NoEgresos}>${balance.egresos.toFixed(2)}</Text>
           </View>
         </View>
-        <Text style={styles.subtitulo}>Novedades:</Text>
+
+        <Text style={styles.subtitulo}>Novedades de la App:</Text>
         <View style={styles.box}>
-          <Text style={styles.novedadTitle}>Transferencia Recibida</Text>
-          <Text style={styles.novedadDetail}>+$100.00 (Nómina)</Text>
-        </View>
-        <View style={styles.box}>
-          <Text style={styles.novedadTitle}>Pago de Servicio</Text>
-          <Text style={styles.novedadDetail}>-$40.00 (Electricidad)</Text>
-        </View>
-        <View style={styles.box}>
-          <Text style={styles.novedadTitle}>Ahorro Automático</Text>
-          <Text style={styles.novedadDetail}>-$10.00 (Fondo de Emergencia)</Text>
+          <Text style={styles.novedadTitle}>¡Bienvenido!</Text>
+          <Text style={styles.novedadDetail}>Ahora puedes gestionar tus presupuestos.</Text>
         </View>
       </ScrollView>
-      <BottomMenu />
     </View>
   );
 }
@@ -78,7 +100,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 40,
     paddingBottom: 100,
-
   },
   header: {
     width: '90%',
@@ -96,7 +117,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 5,
   },
-
   saldoLabel: {
     fontSize: 18,
     color: '#666',
@@ -105,9 +125,7 @@ const styles = StyleSheet.create({
   saldoMonto: {
     fontSize: 40,
     fontWeight: 'bold',
-    color: '#0D074D',
   },
-
   Contenido: {
     width: '90%',
     flexDirection: 'row',
@@ -134,88 +152,48 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 15,
   },
-  ContenidoPred: {
-    alignItems: 'center',
-    backgroundColor: '#f6f6f6ff',
-    width: '48%',
-    aspectRatio: 1,
-    borderRadius: 15,
-    justifyContent: 'center',
-    marginBottom: 15,
-    borderColor: '#0D074D',
-    borderWidth: 2,
-  },
-  txtPred: {
-    fontFamily: 'Arial',
-    fontWeight: 'bold',
-    color: '#0D074D',
-    fontSize: 20,
-    position: 'relative',
-    top: -10,
-  },
-  NoPred: {
-    fontFamily: 'Arial',
-    color: '#0D074D',
-    fontSize: 28,
-    position: 'relative',
-    top: -5
-  },
   txtIngresos: {
-  fontFamily: 'Arial',
     fontWeight: 'bold',
     color: '#0e4101ff',
     fontSize: 20,
-    position: 'relative',
-    top: -10,
+    marginBottom: 5
   },
   NoIngresos: {
-    fontFamily: 'Arial',
     color: '#0e4101ff',
-    fontSize: 28,
-    position: 'relative',
-    top: -5,
+    fontSize: 22,
   },
-
   txtEgresos: {
-    fontFamily: 'Arial',
     fontWeight: 'bold',
     color: '#700000ff',
     fontSize: 20,
-    position: 'relative',
-    top: -10,
+    marginBottom: 5
   },
-
   NoEgresos: {
-    fontFamily: 'Arial',
     color: '#700000ff',
-    fontSize: 28,
-    position: 'relative',
-    top: -5,
+    fontSize: 22,
   },
-
   titulo: {
-    fontFamily: 'Arial',
     fontWeight: 'bold',
     fontSize: 35,
+    color: '#000033'
   },
   subtitulo: {
-    fontFamily: 'Arial',
     fontWeight: 'bold',
     fontSize: 20,
     width: '90%',
     textAlign: 'left',
     marginTop: 10,
     marginBottom: 5,
+    color: '#000033'
   },
   subtituloMetas: {
-    fontFamily: 'Arial',
     fontWeight: 'bold',
     fontSize: 20,
     width: '90%',
     textAlign: 'left',
     marginBottom: 5,
+    color: '#000033'
   },
-
   box: {
     backgroundColor: '#dededeff',
     width: '90%',
@@ -227,7 +205,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
   },
-
   novedadTitle: {
     fontWeight: 'bold',
     fontSize: 16,

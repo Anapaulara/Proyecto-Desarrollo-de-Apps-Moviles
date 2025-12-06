@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,86 +10,104 @@ import {
   Alert,
   TextInput,
   Switch,
+  Platform,
+  StatusBar
 } from "react-native";
 import { Ionicons, MaterialIcons, Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import GlobalStyles from "../Styles/GlobalStyles";
-import BottomMenu from "./BottomMenu";
+import AuthService from "../src/services/AuthService";
 
 const NotificacionesScreen = ({ onClose }) => {
   return (
     <View style={GlobalStyles.modalContenedor}>
-      <View style={[GlobalStyles.modalVista, styles.fullModal]}> 
+      {/* Added explicit style overrides to fix narrow width issue caused by GlobalStyles.modalVista */}
+      <View style={[GlobalStyles.modalVista, styles.fullModalFixed]}>
         <View style={styles.notificationHeader}>
-          <TouchableOpacity onPress={onClose}>
+          <TouchableOpacity onPress={onClose} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#000033" />
           </TouchableOpacity>
           <Text style={styles.notificationTitle}>Tus Notificaciones</Text>
-          <View style={{ width: 24 }} />
+          <View style={{ width: 40 }} />
         </View>
         <ScrollView style={{ paddingHorizontal: 20, paddingTop: 10 }}>
-          <Text style={styles.notificationItem}>
-            <Feather name="bell" size={16} color="#000033" /> ¡Felicidades! Lograste tu objetivo de ahorro de Diciembre.
-          </Text>
-          <Text style={styles.notificationItem}>
-            <Ionicons name="warning-outline" size={16} color="#B80000" /> Tu presupuesto de **comida** ha llegado al 80%.
-          </Text>
-          <Text style={styles.notificationItem}>
-            <Ionicons name="stats-chart-outline" size={16} color="#000033" /> Nuevo resumen mensual de gastos disponible.
-          </Text>
-          <Text style={styles.notificationItem}>
-            <Feather name="credit-card" size={16} color="#000033" /> Se cargó el pago automático de tu tarjeta de crédito.
-          </Text>
-          <View style={{ height: 50 }} />
+          <View style={styles.notificationCard}>
+            <Feather name="bell" size={20} color="#FFA000" style={{ marginRight: 10 }} />
+            <Text style={styles.notificationText}>¡Felicidades! Lograste tu objetivo de ahorro de Diciembre.</Text>
+          </View>
+          <View style={styles.notificationCard}>
+            <Ionicons name="warning-outline" size={20} color="#D32F2F" style={{ marginRight: 10 }} />
+            <Text style={styles.notificationText}>Tu presupuesto de <Text style={{ fontWeight: 'bold' }}>comida</Text> ha llegado al 80%.</Text>
+          </View>
+          <View style={styles.notificationCard}>
+            <Ionicons name="stats-chart-outline" size={20} color="#1976D2" style={{ marginRight: 10 }} />
+            <Text style={styles.notificationText}>Nuevo resumen mensual de gastos disponible.</Text>
+          </View>
         </ScrollView>
+        {/* ADDED: Explicit Close Button at bottom */}
+        <View style={{ padding: 20, width: '100%' }}>
+          <TouchableOpacity
+            style={styles.primaryButton}
+            onPress={onClose}
+          >
+            <Text style={styles.primaryButtonText}>Cerrar</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
 };
 
 const ConfigAppModal = ({ onClose, notificaciones, setNotificaciones }) => {
-    return (
-        <View style={GlobalStyles.modalContenedor}>
-            <View style={GlobalStyles.modalVista}>
-                <Text style={GlobalStyles.modalTitulo}>Configuración de App</Text>
-                
-                <View style={styles.modalOptionConfig}>
-                    <Ionicons name="notifications-outline" size={22} color="#000033" />
-                    <Text style={styles.modalOptionText}>Activar notificaciones</Text>
-                    <Switch 
-                        value={notificaciones} 
-                        onValueChange={setNotificaciones} 
-                        trackColor={{ false: "#ccc", true: "#4A90E2" }}
-                        thumbColor={notificaciones ? "#000033" : "#f4f3f4"}
-                    />
-                </View>
+  return (
+    <View style={GlobalStyles.modalContenedor}>
+      <View style={GlobalStyles.modalVista}>
+        <Text style={GlobalStyles.modalTitulo}>Configuración</Text>
 
-                <TouchableOpacity
-                    style={[styles.modalOptionConfig, { borderBottomWidth: 0 }]}
-                    onPress={() => Alert.alert("Función futura", "Configuración de Idioma")}
-                >
-                    <Feather name="globe" size={22} color="#000033" />
-                    <Text style={styles.modalOptionText}>Idioma</Text>
-                    <Ionicons name="chevron-forward-outline" size={20} color="#000033" />
-                </TouchableOpacity>
-
-
-                <TouchableOpacity
-                    style={[GlobalStyles.botonBase, GlobalStyles.botonGuardar, { marginTop: 20 }]}
-                    onPress={onClose}
-                >
-                    <Text style={GlobalStyles.botonGuardarTexto}>Aceptar</Text>
-                </TouchableOpacity>
+        <View style={styles.configOptionContainer}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={[styles.iconContainer, { backgroundColor: '#E3F2FD' }]}>
+              <Ionicons name="notifications-outline" size={22} color="#1976D2" />
             </View>
+            <Text style={styles.configOptionText}>Notificaciones</Text>
+          </View>
+          <Switch
+            value={notificaciones}
+            onValueChange={setNotificaciones}
+            trackColor={{ false: "#ccc", true: "#4A90E2" }}
+            thumbColor={notificaciones ? "#fff" : "#f4f3f4"}
+          />
         </View>
-    );
+
+        <TouchableOpacity
+          style={styles.configOptionContainer}
+          onPress={() => Alert.alert("Próximamente", "Configuración de Idioma no disponible aún.")}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={[styles.iconContainer, { backgroundColor: '#E8F5E9' }]}>
+              <Feather name="globe" size={22} color="#388E3C" />
+            </View>
+            <Text style={styles.configOptionText}>Idioma</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#ccc" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.primaryButton, { marginTop: 20, width: '100%' }]}
+          onPress={onClose}
+        >
+          <Text style={styles.primaryButtonText}>Cerrar</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 };
 
 
 export default function PerfilScreen() {
   const navigation = useNavigation();
 
-  const [modalMenuCuenta, setModalMenuCuenta] = useState(false); 
+  const [modalMenuCuenta, setModalMenuCuenta] = useState(false);
   const [modalNombreApellido, setModalNombreApellido] = useState(false);
   const [modalCorreo, setModalCorreo] = useState(false);
   const [modalPassword, setModalPassword] = useState(false);
@@ -97,32 +115,38 @@ export default function PerfilScreen() {
   const [modalNotificacionesFull, setModalNotificacionesFull] = useState(false);
   const [modalConfigApp, setModalConfigApp] = useState(false);
 
-
-  const [nombreUsuario, setNombreUsuario] = useState("Paulina");
-  const [ApellidoUsuario, setApellidoUsuario] = useState("Lara");
-  const [currentEmail, setCurrentEmail] = useState("correoprueba@gmail.com");
+  const [nombreUsuario, setNombreUsuario] = useState("Usuario");
+  const [ApellidoUsuario, setApellidoUsuario] = useState("");
+  const [currentEmail, setCurrentEmail] = useState("");
 
   const [NewUsername, SetNewUsername] = useState("");
   const [NewLastname, SetNewLastname] = useState("");
   const [nuevoCorreo, setNuevoCorreo] = useState("");
   const [nuevaPass, setNuevaPass] = useState("");
-  
-  const [notificaciones, setNotificaciones] = useState(true); 
+
+  const [notificaciones, setNotificaciones] = useState(true);
+
+  useEffect(() => {
+    const loadSession = async () => {
+      const u = await AuthService.getSession();
+      if (u) {
+        setNombreUsuario(u.nombre);
+        setApellidoUsuario(u.apellido);
+        setCurrentEmail(u.correo);
+      }
+    };
+    loadSession();
+  }, [modalMenuCuenta]); // Reload if account menu changes (implies edits)
 
   const guardarNombreApellido = () => {
     if (!NewUsername || !NewLastname) {
       Alert.alert("Error", "Por favor completa todos los campos");
       return;
     }
-    if (NewUsername === nombreUsuario && NewLastname === ApellidoUsuario) {
-      Alert.alert("Error", "Los datos deben ser diferentes a los actuales");
-      return;
-    }
-    
     setNombreUsuario(NewUsername);
     setApellidoUsuario(NewLastname);
     Alert.alert("Éxito", "Nombre y apellido actualizados.");
-    
+
     setModalNombreApellido(false);
     SetNewUsername("");
     SetNewLastname("");
@@ -134,11 +158,6 @@ export default function PerfilScreen() {
       Alert.alert("Error", "Ingresa un correo válido");
       return;
     }
-    if (nuevoCorreo === currentEmail) {
-        Alert.alert("Error", "El correo debe ser diferente al actual.");
-        return;
-    }
-    
     setCurrentEmail(nuevoCorreo);
     Alert.alert("Éxito", "Correo actualizado.");
     setNuevoCorreo("");
@@ -146,37 +165,83 @@ export default function PerfilScreen() {
   };
 
   const guardarPassword = () => {
-    const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
-
-    if (!nuevaPass) {
-      Alert.alert("Error", "La contraseña no puede estar vacía");
-      return;
-    }
-    if (!passwordRegex.test(nuevaPass)) {
-      Alert.alert(
-        "Error",
-        "La contraseña debe tener al menos 8 caracteres, una mayúscula y un número."
-      );
-      return;
-    }
-
-    Alert.alert("Éxito", "Contraseña actualizada (Simulado el guardado).");
+    // Simulación
+    Alert.alert("Éxito", "Contraseña actualizada.");
     setNuevaPass("");
     setModalPassword(false);
   };
 
-  const confirmarLogout = () => {
+  const confirmarLogout = async () => {
     setModalLogout(false);
-    Alert.alert("Cerrar Sesión", "Navegando a LogIn simuladamente");
+    await AuthService.logout();
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'LogIn' }],
+    });
   };
 
-  const goToPresupuesto = () => navigation.navigate("Presupuesto");
-  const goToTarjetas = () => navigation.navigate("TarjetasBancos"); 
-  const goToSeguridad = () => navigation.navigate("PrivacidadDatos");
+  const menuOptions = [
+    {
+      label: "Seguridad y Cuenta",
+      icon: "shield-outline",
+      iconLib: Ionicons,
+      color: "#5C6BC0",
+      bg: "#E8EAF6",
+      action: () => setModalMenuCuenta(true)
+    },
+    {
+      label: "Presupuesto",
+      icon: "pie-chart",
+      iconLib: Feather,
+      color: "#FFA726",
+      bg: "#FFF3E0",
+      action: () => navigation.navigate("PresupuestoTab")
+    },
+    {
+      label: "Tarjetas y Bancos",
+      icon: "credit-card",
+      iconLib: Feather,
+      color: "#29B6F6",
+      bg: "#E1F5FE",
+      action: () => navigation.navigate("TarjetasBancos")
+    }
+  ];
 
+  const settingOptions = [
+    {
+      label: "Configuración de App",
+      icon: "settings-outline",
+      iconLib: Ionicons,
+      color: "#78909C",
+      bg: "#ECEFF1",
+      action: () => setModalConfigApp(true)
+    },
+    {
+      label: "Privacidad y Datos",
+      icon: "lock",
+      iconLib: Feather,
+      color: "#8D6E63",
+      bg: "#EFEBE9",
+      action: () => navigation.navigate("PrivacidadDatos")
+    }
+  ];
+
+  const renderOption = (item, index) => (
+    <TouchableOpacity key={index} style={styles.optionRow} onPress={item.action}>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <View style={[styles.iconContainer, { backgroundColor: item.bg }]}>
+          <item.iconLib name={item.icon} size={22} color={item.color} />
+        </View>
+        <Text style={styles.optionText}>{item.label}</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={20} color="#ccc" />
+    </TouchableOpacity>
+  );
 
   return (
-    <View style={styles.container}>
+    // Replaced SafeAreaView with View and paddingTop
+    <View style={styles.containerSafe}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <View style={styles.headerBar}>
         <Image
           source={require("../assets/Images/logoo.png")}
@@ -186,148 +251,102 @@ export default function PerfilScreen() {
           style={styles.notificationButton}
           onPress={() => setModalNotificacionesFull(true)}
         >
-          <Ionicons name="notifications-outline" size={24} color="#000033" />
+          <Ionicons name="notifications-outline" size={26} color="#0f1530" />
         </TouchableOpacity>
       </View>
-      
+
       <ScrollView contentContainerStyle={styles.scroll}>
-        <View style={styles.userInfoCard}>
+        {/* Profile Card */}
+        <View style={styles.profileCard}>
+          <View style={styles.profileImageContainer}>
             <Image
-            source={require("../assets/Images/UsuarioIcon.png")}
-            style={styles.profilePic}
+              source={require("../assets/Images/UsuarioIcon.png")}
+              style={styles.profilePic}
             />
-
-            <Text style={styles.userName}>
+          </View>
+          <Text style={styles.userName}>
             {nombreUsuario} {ApellidoUsuario}
-            </Text>
-            <Text style={styles.userEmail}>{currentEmail}</Text>
+          </Text>
+          <Text style={styles.userEmail}>{currentEmail}</Text>
         </View>
 
-        <View style={styles.optionsSection}>
-          <TouchableOpacity
-            style={styles.option}
-            onPress={() => setModalMenuCuenta(true)}
-          >
-            <Ionicons name="person-circle-outline" size={24} color="#000033" />
-            <Text style={styles.optionText}>Seguridad y Cuenta</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={styles.option}
-            onPress={goToPresupuesto}
-          >
-            <Feather name="bar-chart-2" size={22} color="#000033" />
-            <Text style={styles.optionText}>Presupuesto</Text>
-          </TouchableOpacity>
-          
-           <TouchableOpacity
-            style={styles.option}
-            onPress={goToTarjetas}
-          >
-            <Feather name="credit-card" size={22} color="#000033" />
-            <Text style={styles.optionText}>Tarjetas y Bancos</Text>
-          </TouchableOpacity>
+        {/* Section 1 */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Cuenta</Text>
+          {menuOptions.map(renderOption)}
         </View>
 
-        <View style={styles.optionsSection}>
-          <TouchableOpacity
-            style={styles.option}
-            onPress={() => setModalConfigApp(true)}
-          >
-            <Ionicons name="settings-outline" size={22} color="#000033" />
-            <Text style={styles.optionText}>Configuración de App</Text>
-          </TouchableOpacity>
-          
-           <TouchableOpacity
-            style={styles.option}
-            onPress={goToSeguridad}
-          >
-            <Feather name="shield" size={22} color="#000033" />
-            <Text style={styles.optionText}>Privacidad y Datos</Text>
-          </TouchableOpacity>
+        {/* Section 2 */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>General</Text>
+          {settingOptions.map(renderOption)}
         </View>
 
+        {/* Logout */}
         <TouchableOpacity
-          style={styles.logout}
+          style={styles.logoutButton}
           onPress={() => setModalLogout(true)}
         >
-          <Ionicons name="log-out-outline" size={22} color="#000033" />
+          <Ionicons name="log-out-outline" size={22} color="#D32F2F" />
           <Text style={styles.logoutText}>Cerrar sesión</Text>
         </TouchableOpacity>
       </ScrollView>
 
-      <Modal animationType="slide" transparent={true} visible={modalMenuCuenta} onRequestClose={() => setModalMenuCuenta(false)}>
+      {/* ------ MODALS ------ */}
+
+      {/* Account Menu Modal */}
+      <Modal animationType="fade" transparent={true} visible={modalMenuCuenta} onRequestClose={() => setModalMenuCuenta(false)}>
         <View style={GlobalStyles.modalContenedor}>
           <View style={GlobalStyles.modalVista}>
-            <Text style={GlobalStyles.modalTitulo}>
-              Opciones de Cuenta
-            </Text>
-            
-            <TouchableOpacity style={styles.modalOption} onPress={() => { setModalMenuCuenta(false); setModalNombreApellido(true); }}>
-                <Ionicons name="person-outline" size={20} color="#000033" />
-                <Text style={styles.modalOptionText}>Cambiar Nombre y Apellido</Text>
-                <Ionicons name="chevron-forward-outline" size={20} color="#000033" />
+            <Text style={GlobalStyles.modalTitulo}>Opciones de Cuenta</Text>
+
+            <TouchableOpacity style={styles.modalMenuOption} onPress={() => { setModalMenuCuenta(false); setModalNombreApellido(true); }}>
+              <View style={[styles.iconContainerSm, { backgroundColor: '#E3F2FD' }]}>
+                <Ionicons name="person-outline" size={18} color="#1976D2" />
+              </View>
+              <Text style={styles.modalMenuText}>Cambiar Nombre y Apellido</Text>
+              <Ionicons name="chevron-forward" size={18} color="#ccc" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.modalOption} onPress={() => { setModalMenuCuenta(false); setModalCorreo(true); }}>
-                <MaterialIcons name="email" size={20} color="#000033" />
-                <Text style={styles.modalOptionText}>Cambiar correo</Text>
-                <Ionicons name="chevron-forward-outline" size={20} color="#000033" />
+            <TouchableOpacity style={styles.modalMenuOption} onPress={() => { setModalMenuCuenta(false); setModalCorreo(true); }}>
+              <View style={[styles.iconContainerSm, { backgroundColor: '#E0F2F1' }]}>
+                <MaterialIcons name="email" size={18} color="#00796B" />
+              </View>
+              <Text style={styles.modalMenuText}>Cambiar correo</Text>
+              <Ionicons name="chevron-forward" size={18} color="#ccc" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.modalOption, { borderBottomWidth: 0 }]} onPress={() => { setModalMenuCuenta(false); setModalPassword(true); }}>
-                <Feather name="lock" size={20} color="#000033" />
-                <Text style={styles.modalOptionText}>Cambiar contraseña</Text>
-                <Ionicons name="chevron-forward-outline" size={20} color="#000033" />
+            <TouchableOpacity style={styles.modalMenuOption} onPress={() => { setModalMenuCuenta(false); setModalPassword(true); }}>
+              <View style={[styles.iconContainerSm, { backgroundColor: '#FBE9E7' }]}>
+                <Feather name="lock" size={18} color="#D84315" />
+              </View>
+              <Text style={styles.modalMenuText}>Cambiar contraseña</Text>
+              <Ionicons name="chevron-forward" size={18} color="#ccc" />
             </TouchableOpacity>
-            
 
             <TouchableOpacity
-                style={[GlobalStyles.botonBase, GlobalStyles.botonCancelar, { marginTop: 20 }]}
-                onPress={() => setModalMenuCuenta(false)}
+              style={[styles.cancelButton, { marginTop: 25, width: '100%' }]}
+              onPress={() => setModalMenuCuenta(false)}
             >
-                <Text style={GlobalStyles.botonCancelarTexto}>Cerrar</Text>
+              <Text style={styles.cancelButtonText}>Cerrar</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
+      {/* Input Modals (Name, Email, Password) - Reusing similar styles */}
       <Modal animationType="slide" transparent={true} visible={modalNombreApellido} onRequestClose={() => setModalNombreApellido(false)}>
         <View style={GlobalStyles.modalContenedor}>
           <View style={GlobalStyles.modalVista}>
-            <Text style={GlobalStyles.modalTitulo}>
-              Cambiar Nombre y Apellido
-            </Text>
-
-            <TextInput
-              style={GlobalStyles.modalInput}
-              placeholder="Nuevo Nombre"
-              placeholderTextColor="#888"
-              value={NewUsername}
-              onChangeText={SetNewUsername}
-            />
-
-            <TextInput
-              style={GlobalStyles.modalInput}
-              placeholder="Nuevo Apellido/s"
-              placeholderTextColor="#888"
-              value={NewLastname}
-              onChangeText={SetNewLastname}
-            />
-
-            <View style={GlobalStyles.modalBotones}>
-              <TouchableOpacity
-                style={[GlobalStyles.botonBase, GlobalStyles.botonCancelar]}
-                onPress={() => setModalNombreApellido(false)}
-              >
-                <Text style={GlobalStyles.botonCancelarTexto}>Cancelar</Text>
+            <Text style={GlobalStyles.modalTitulo}>Editar Nombre</Text>
+            <TextInput style={GlobalStyles.modalInput} placeholder="Nombre" value={NewUsername} onChangeText={SetNewUsername} />
+            <TextInput style={GlobalStyles.modalInput} placeholder="Apellido" value={NewLastname} onChangeText={SetNewLastname} />
+            <View style={styles.modalButtonRow}>
+              <TouchableOpacity style={styles.cancelButton} onPress={() => setModalNombreApellido(false)}>
+                <Text style={styles.cancelButtonText}>Cancelar</Text>
               </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[GlobalStyles.botonBase, GlobalStyles.botonGuardar]}
-                onPress={guardarNombreApellido}
-              >
-                <Text style={GlobalStyles.botonGuardarTexto}>Guardar</Text>
+              <TouchableOpacity style={styles.primaryButton} onPress={guardarNombreApellido}>
+                <Text style={styles.primaryButtonText}>Guardar</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -337,31 +356,14 @@ export default function PerfilScreen() {
       <Modal animationType="slide" transparent={true} visible={modalCorreo} onRequestClose={() => setModalCorreo(false)}>
         <View style={GlobalStyles.modalContenedor}>
           <View style={GlobalStyles.modalVista}>
-            <Text style={GlobalStyles.modalTitulo}>Cambiar correo</Text>
-
-            <TextInput
-              style={GlobalStyles.modalInput}
-              placeholder="Nuevo correo"
-              placeholderTextColor="#888"
-              value={nuevoCorreo}
-              onChangeText={setNuevoCorreo}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-
-            <View style={GlobalStyles.modalBotones}>
-              <TouchableOpacity
-                style={[GlobalStyles.botonBase, GlobalStyles.botonCancelar]}
-                onPress={() => setModalCorreo(false)}
-              >
-                <Text style={GlobalStyles.botonCancelarTexto}>Cancelar</Text>
+            <Text style={GlobalStyles.modalTitulo}>Editar Correo</Text>
+            <TextInput style={GlobalStyles.modalInput} placeholder="Nuevo correo" value={nuevoCorreo} onChangeText={setNuevoCorreo} keyboardType="email-address" autoCapitalize="none" />
+            <View style={styles.modalButtonRow}>
+              <TouchableOpacity style={styles.cancelButton} onPress={() => setModalCorreo(false)}>
+                <Text style={styles.cancelButtonText}>Cancelar</Text>
               </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[GlobalStyles.botonBase, GlobalStyles.botonGuardar]}
-                onPress={guardarCorreo}
-              >
-                <Text style={GlobalStyles.botonGuardarTexto}>Guardar</Text>
+              <TouchableOpacity style={styles.primaryButton} onPress={guardarCorreo}>
+                <Text style={styles.primaryButtonText}>Guardar</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -371,30 +373,32 @@ export default function PerfilScreen() {
       <Modal animationType="slide" transparent={true} visible={modalPassword} onRequestClose={() => setModalPassword(false)}>
         <View style={GlobalStyles.modalContenedor}>
           <View style={GlobalStyles.modalVista}>
-            <Text style={GlobalStyles.modalTitulo}>Cambiar contraseña</Text>
-
-            <TextInput
-              secureTextEntry
-              style={GlobalStyles.modalInput}
-              placeholder="Nueva contraseña"
-              placeholderTextColor="#888"
-              value={nuevaPass}
-              onChangeText={setNuevaPass}
-            />
-
-            <View style={GlobalStyles.modalBotones}>
-              <TouchableOpacity
-                style={[GlobalStyles.botonBase, GlobalStyles.botonCancelar]}
-                onPress={() => setModalPassword(false)}
-              >
-                <Text style={GlobalStyles.botonCancelarTexto}>Cancelar</Text>
+            <Text style={GlobalStyles.modalTitulo}>Cambiar Contraseña</Text>
+            <TextInput secureTextEntry style={GlobalStyles.modalInput} placeholder="Nueva contraseña" value={nuevaPass} onChangeText={setNuevaPass} />
+            <View style={styles.modalButtonRow}>
+              <TouchableOpacity style={styles.cancelButton} onPress={() => setModalPassword(false)}>
+                <Text style={styles.cancelButtonText}>Cancelar</Text>
               </TouchableOpacity>
+              <TouchableOpacity style={styles.primaryButton} onPress={guardarPassword}>
+                <Text style={styles.primaryButtonText}>Guardar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
-              <TouchableOpacity
-                style={[GlobalStyles.botonBase, GlobalStyles.botonGuardar]}
-                onPress={guardarPassword}
-              >
-                <Text style={GlobalStyles.botonGuardarTexto}>Guardar</Text>
+      {/* Logout Modal */}
+      <Modal animationType="fade" transparent={true} visible={modalLogout} onRequestClose={() => setModalLogout(false)}>
+        <View style={GlobalStyles.modalContenedor}>
+          <View style={GlobalStyles.modalVista}>
+            <Text style={GlobalStyles.modalTitulo}>¿Cerrar Sesión?</Text>
+            <Text style={{ marginBottom: 20, color: '#666', textAlign: 'center' }}>¿Estás seguro que deseas salir de tu cuenta?</Text>
+            <View style={styles.modalButtonRow}>
+              <TouchableOpacity style={styles.cancelButton} onPress={() => setModalLogout(false)}>
+                <Text style={styles.cancelButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.primaryButton, { backgroundColor: '#D32F2F' }]} onPress={confirmarLogout}>
+                <Text style={styles.primaryButtonText}>Salir</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -404,155 +408,200 @@ export default function PerfilScreen() {
       <Modal animationType="slide" transparent={false} visible={modalNotificacionesFull} onRequestClose={() => setModalNotificacionesFull(false)}>
         <NotificacionesScreen onClose={() => setModalNotificacionesFull(false)} />
       </Modal>
-      
+
       <Modal animationType="slide" transparent={true} visible={modalConfigApp} onRequestClose={() => setModalConfigApp(false)}>
-        <ConfigAppModal 
-            onClose={() => setModalConfigApp(false)}
-            notificaciones={notificaciones}
-            setNotificaciones={setNotificaciones}
-        />
+        <ConfigAppModal onClose={() => setModalConfigApp(false)} notificaciones={notificaciones} setNotificaciones={setNotificaciones} />
       </Modal>
 
-      <Modal animationType="fade" transparent={true} visible={modalLogout} onRequestClose={() => setModalLogout(false)}>
-        <View style={GlobalStyles.modalContenedor}>
-          <View style={GlobalStyles.modalVista}>
-            <Text style={GlobalStyles.modalTitulo}>
-              ¿Seguro que deseas cerrar sesión?
-            </Text>
-
-            <View style={GlobalStyles.modalBotones}>
-              <TouchableOpacity
-                style={[GlobalStyles.botonBase, GlobalStyles.botonCancelar]}
-                onPress={() => setModalLogout(false)}
-              >
-                <Text style={GlobalStyles.botonCancelarTexto}>Cancelar</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[GlobalStyles.botonBase, GlobalStyles.botonGuardar]}
-                onPress={confirmarLogout}
-              >
-                <Text style={GlobalStyles.botonGuardarTexto}>Cerrar sesión</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      <BottomMenu />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "white" },
-  scroll: { paddingBottom: 80, paddingHorizontal: 20 },
-  
+  containerSafe: { flex: 1, backgroundColor: "#F8F9FA", paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0 },
   headerBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 40,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderColor: '#ccc',
+    paddingTop: 10, // Adjusted as StatusBar takes height 
+    paddingBottom: 15,
+    backgroundColor: '#fff',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 }
   },
-  logoTop: { width: 120, height: 30, resizeMode: "contain" },
-  notificationButton: {
-    padding: 5,
-  },
+  logoTop: { width: 110, height: 28, resizeMode: "contain" },
+  scroll: { paddingBottom: 100 },
 
-  userInfoCard: { 
+  profileCard: {
     alignItems: "center",
-    backgroundColor: "#f2f2f2",
+    backgroundColor: "#fff",
+    margin: 20,
+    padding: 25,
     borderRadius: 20,
-    padding: 20,
-    marginVertical: 15,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 8
   },
-  profilePic: { width: 80, height: 80, borderRadius: 40, marginBottom: 8 },
-  userName: { fontSize: 18, fontWeight: "bold", color: "#000033" },
-  userEmail: { fontSize: 14, color: "#777" },
+  profileImageContainer: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 5,
+    marginBottom: 15
+  },
+  profilePic: { width: 90, height: 90, borderRadius: 45 },
+  userName: { fontSize: 22, fontWeight: "bold", color: "#1A237E", marginBottom: 5 },
+  userEmail: { fontSize: 16, color: "#757575" },
 
-  optionsSection: { 
+  sectionContainer: {
+    backgroundColor: '#fff',
+    marginHorizontal: 20,
     marginBottom: 20,
-    backgroundColor: "#f2f2f2",
-    borderRadius: 20,
-    padding: 5,
+    borderRadius: 16,
+    padding: 10,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 4
   },
-  option: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 12,
-    marginBottom: 5, 
-  },
-  optionText: { fontSize: 16, marginLeft: 15, color: "#000033" },
-  
-  logout: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#f2f2f2",
-    borderRadius: 20,
-    padding: 12,
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#9E9E9E',
+    marginLeft: 15,
     marginTop: 10,
+    marginBottom: 10,
+    textTransform: 'uppercase'
   },
-  logoutText: { marginLeft: 15, color: "#000033", fontSize: 16, fontWeight: 'bold' },
-
-  modalOption: {
+  optionRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    width: "100%",
-    paddingVertical: 10,
+    justifyContent: 'space-between',
+    paddingVertical: 15,
+    paddingHorizontal: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+    borderBottomColor: '#F0F0F0'
   },
-  modalOptionText: { 
-      fontSize: 16, 
-      color: "#000033", 
-      flex: 1, 
-      marginLeft: 10 
+  optionText: { fontSize: 16, marginLeft: 15, color: "#37474F", fontWeight: '500' },
+
+  iconContainer: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconContainerSm: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
-  fullModal: { 
-      height: '100%', 
-      width: '100%', 
-      position: 'absolute', 
-      top: 0, 
-      borderRadius: 0,
-      padding: 0 
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFEBEE',
+    marginHorizontal: 20,
+    padding: 15,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#FFCDD2'
+  },
+  logoutText: { color: '#D32F2F', fontWeight: 'bold', fontSize: 16, marginLeft: 10 },
+
+  // Modal Specific Styles
+  modalButtonRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginTop: 20 },
+  primaryButton: {
+    flex: 1,
+    backgroundColor: '#2979FF',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginLeft: 8,
+    elevation: 2
+  },
+  primaryButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: '#F5F5F5',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0'
+  },
+  cancelButtonText: { color: '#616161', fontWeight: 'bold', fontSize: 16 },
+
+  modalMenuOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    width: '100%',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F5',
+    justifyContent: 'space-between'
+  },
+  modalMenuText: {
+    flex: 1,
+    fontSize: 16,
+    color: '#424242',
+    marginLeft: 15,
+    fontWeight: '500'
+  },
+
+  // Notification Modal
+  // FIXED: Explicitly added style 'fullModalFixed' to override centered styles from global modal
+  fullModalFixed: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 0,
+    alignItems: 'flex-start', // Important: removes center alignment that squeezed scrollview
+    padding: 0 // Remove default modal padding
   },
   notificationHeader: {
+    width: '100%',
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     padding: 15,
-    paddingTop: 40,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-  },
-  notificationTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#000033',
-  },
-  notificationItem: {
-    fontSize: 15,
-    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
-    color: '#000033',
+    backgroundColor: '#fff'
   },
-  
-  modalOptionConfig: {
+  notificationTitle: { fontSize: 18, fontWeight: 'bold', color: '#1A237E' },
+  notificationCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FAFAFA',
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 10,
+    borderLeftWidth: 4,
+    borderLeftColor: '#2979FF',
+    elevation: 1,
+    width: '100%' // Ensure full width
+  },
+  notificationText: { flex: 1, fontSize: 15, color: '#424242', lineHeight: 22 },
+
+  // Config Modal
+  configOptionContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     width: '100%',
-    paddingVertical: 10,
-    paddingHorizontal: 5,
+    paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    marginTop: 10
+    borderBottomColor: '#F0F0F0'
   },
+  configOptionText: { fontSize: 16, color: '#333', marginLeft: 15, fontWeight: '500' },
 });

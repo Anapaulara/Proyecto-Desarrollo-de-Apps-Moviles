@@ -80,12 +80,38 @@ class AuthService {
                 [nuevaPass, correo]
             );
             return true;
-
         } catch (err) {
             console.log("ERROR UPDATE:", err);
             return false;
         }
     }
+
+    // ⭐ SESSION (Simple AsyncStorage wrapper could be here or separate)
+    // For simplicity, we assume the caller handles AsyncStorage or we add it here.
+    // Let's add it here to keep Auth logic encapsulated.
 }
 
-export default new AuthService();
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const extendedAuthService = new AuthService();
+
+extendedAuthService.setSession = async (user) => {
+    try {
+        await AsyncStorage.setItem('user_session', JSON.stringify(user));
+    } catch (e) { console.error(e); }
+};
+
+extendedAuthService.getSession = async () => {
+    try {
+        const json = await AsyncStorage.getItem('user_session');
+        return json ? JSON.parse(json) : null;
+    } catch (e) { return null; }
+};
+
+extendedAuthService.logout = async () => {
+    try {
+        await AsyncStorage.removeItem('user_session');
+    } catch (e) { console.error(e); }
+};
+
+export default extendedAuthService;

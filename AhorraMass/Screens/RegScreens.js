@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Modal, Alert } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
-import BottomMenu from './BottomMenu';
+// BottomMenu import removed
 import TransaccionesService from "../src/services/TransaccionesService";
 
 // ⭐ CATEGORÍAS OFICIALES
@@ -127,7 +127,7 @@ export default function RegScreen() {
         <Text style={{ fontWeight: "bold" }}>Filtrar categoría:</Text>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 10 }}>
-          { [...categoriasIngresos, ...categoriasEgresos].map((cat, index) => (
+          {[...categoriasIngresos, ...categoriasEgresos].map((cat, index) => (
             <TouchableOpacity
               key={index}
               style={[
@@ -255,7 +255,7 @@ export default function RegScreen() {
         </View>
       </Modal>
 
-      <BottomMenu />
+      {/* BottomMenu removed */}
     </View>
   );
 }

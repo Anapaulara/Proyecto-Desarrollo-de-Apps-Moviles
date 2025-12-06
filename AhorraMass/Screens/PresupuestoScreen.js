@@ -2,67 +2,97 @@ import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, FlatList, Alert, ActivityIndicator } from "react-native";
 import { Ionicons, MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 import { useNavigation, useIsFocused } from "@react-navigation/native";
-import AsyncStorage from '@react-native-async-storage/async-storage'; 
-
-const STORAGE_KEY = '@presupuesto_categories';
-const initialCategories = [
-  { id: '1', name: 'Canasta Básica', icon: 'shopping-cart', amount: 150.00, iconType: 'MaterialIcons' },
-  { id: '2', name: 'Salud', icon: 'heart-outline', amount: 50.00, iconType: 'Ionicons' },
-  { id: '3', name: 'Entretenimiento', icon: 'play-circle', amount: 30.00, iconType: 'FontAwesome5' },
-];
+import PresupuestosService from "../src/services/PresupuestosService";
+import TransaccionesService from "../src/services/TransaccionesService";
 
 export default function PresupuestoScreen() {
   const navigation = useNavigation();
   const isFocused = useIsFocused();
 
-  const [categories, setCategories] = useState([]); 
-  const [loading, setLoading] = useState(true); 
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryAmount, setNewCategoryAmount] = useState('');
   const [editingCategory, setEditingCategory] = useState(null);
 
-  const loadCategories = async () => {
+  // Load budgets and check status
+  const loadData = async () => {
     try {
-      const storedCategories = await AsyncStorage.getItem(STORAGE_KEY);
-      if (storedCategories !== null) {
-        setCategories(JSON.parse(storedCategories));
-      } else {
-        setCategories(initialCategories);
+      setLoading(true);
+      const budgets = await PresupuestosService.obtenerTodos();
+
+      // Calculate current spending per category for the current month
+      const today = new Date();
+      // currentMonth format YYYY-MM
+      const currentMonth = today.toISOString().slice(0, 7);
+
+      const budgetsWithStatus = await Promise.all(budgets.map(async (b) => {
+        // Get all transactions for this category (we filter by date in JS to handle mixed formats)
+        const transactions = await TransaccionesService.filtrarPorCategoria(b.categoria);
+
+        const totalSpent = transactions
+          .filter(t => {
+            if (t.tipo !== 'egreso') return false;
+
+            // Normalize separator: replace all / with -
+            const cleanDate = t.fecha.replace(/\//g, '-');
+            const parts = cleanDate.split('-');
+
+            let tMonth = "";
+
+            if (parts.length === 3) {
+              // Check where the year is (4 digits)
+              if (parts[0].length === 4) {
+                // YYYY-MM-DD
+                tMonth = `${parts[0]}-${parts[1]}`;
+              } else if (parts[2].length === 4) {
+                // DD-MM-YYYY
+                tMonth = `${parts[2]}-${parts[1]}`;
+              }
+            } else {
+              // Fallback if format is unexpected, take first 7 chars if standard ISO
+              tMonth = cleanDate.substring(0, 7);
+            }
+
+            // Debug log could be added here if needed
+            return tMonth === currentMonth;
+          })
+          .reduce((sum, t) => sum + t.monto, 0);
+
+        return {
+          ...b,
+          spent: totalSpent,
+          isExceeded: totalSpent > b.montoLimit,
+          name: b.categoria,
+          amount: b.montoLimit
+        };
+      }));
+
+      setCategories(budgetsWithStatus);
+
+      // Check for notifications
+      const exceeded = budgetsWithStatus.filter(b => b.isExceeded);
+      if (exceeded.length > 0) {
+        Alert.alert("¡Alerta de Presupuesto!", `Has excedido el presupuesto en: ${exceeded.map(b => b.categoria).join(", ")}`);
       }
+
     } catch (e) {
-      console.error("Error al cargar categorías: ", e);
-      setCategories(initialCategories);
+      console.error("Error al cargar presupuestos: ", e);
     } finally {
       setLoading(false);
     }
   };
 
-  const saveCategories = async (newCategories) => {
-    try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newCategories));
-    } catch (e) {
-      console.error("Error al guardar categorías: ", e);
-    }
-  };
-
   useEffect(() => {
-    loadCategories();
-  }, []);
-
-  useEffect(() => {
-    if (!loading) {
-      saveCategories(categories);
+    if (isFocused) {
+      loadData();
     }
-  }, [categories, loading]);
+  }, [isFocused]);
 
-  const handleUpdateCategories = (newCategories) => {
-    setCategories(newCategories);
-  };
-
-  const handleSaveCategory = () => {
+  const handleSaveCategory = async () => {
     if (!newCategoryName || !newCategoryAmount) {
-      Alert.alert("Error", "Debes ingresar un nombre y un monto.");
+      Alert.alert("Error", "Debes ingresar una categoría y un monto.");
       return;
     }
 
@@ -72,50 +102,41 @@ export default function PresupuestoScreen() {
       return;
     }
 
-    let updatedCategories;
+    try {
+      const today = new Date();
+      const currentMonth = today.toISOString().slice(0, 7);
 
-    if (editingCategory) {
-      updatedCategories = categories.map(cat => 
-        cat.id === editingCategory.id
-          ? { ...cat, name: newCategoryName, amount: amountValue }
-          : cat
-      );
-      Alert.alert("Éxito", "Categoría actualizada.");
-    } else {
-      const newCategory = {
-        id: Date.now().toString(),
-        name: newCategoryName,
-        amount: amountValue,
-        icon: 'folder-outline',
-        iconType: 'Ionicons',
-      };
-      updatedCategories = [...categories, newCategory];
-      Alert.alert("Éxito", "Categoría creada.");
+      if (editingCategory) {
+        await PresupuestosService.editar(editingCategory.id, newCategoryName, amountValue, currentMonth);
+        Alert.alert("Éxito", "Presupuesto actualizado.");
+      } else {
+        await PresupuestosService.agregar(newCategoryName, amountValue, currentMonth);
+        Alert.alert("Éxito", "Presupuesto creado.");
+      }
+
+      setModalVisible(false);
+      setNewCategoryName('');
+      setNewCategoryAmount('');
+      setEditingCategory(null);
+      loadData();
+
+    } catch (e) {
+      console.error("Error saving budget", e);
+      Alert.alert("Error", "No se pudo guardar el presupuesto.");
     }
-
-    handleUpdateCategories(updatedCategories);
-
-    setModalVisible(false);
-    setNewCategoryName('');
-    setNewCategoryAmount('');
-    setEditingCategory(null);
   };
 
   const handleDelete = (id) => {
     Alert.alert(
       "Confirmar Eliminación",
-      "¿Estás seguro de que quieres eliminar esta categoría?",
+      "¿Estás seguro de que quieres eliminar este presupuesto?",
       [
+        { text: "Cancelar", style: "cancel" },
         {
-          text: "Cancelar",
-          style: "cancel"
-        },
-        { 
-          text: "Eliminar", 
-          onPress: () => {
-            const updatedCategories = categories.filter(cat => cat.id !== id);
-            handleUpdateCategories(updatedCategories);
-            Alert.alert("Éxito", "Categoría eliminada.");
+          text: "Eliminar",
+          onPress: async () => {
+            await PresupuestosService.eliminar(id);
+            loadData();
           },
           style: 'destructive'
         }
@@ -124,35 +145,14 @@ export default function PresupuestoScreen() {
   };
 
   const handleDeleteAll = () => {
-    if (categories.length === 0) {
-      Alert.alert("Información", "No hay presupuestos para eliminar.");
-      return;
-    }
-
-    Alert.alert(
-      "Confirmar Eliminación Total",
-      "¡Cuidado! ¿Estás seguro de que quieres eliminar TODOS los presupuestos?",
-      [
-        {
-          text: "Cancelar",
-          style: "cancel"
-        },
-        { 
-          text: "Eliminar Todo", 
-          onPress: () => {
-            handleUpdateCategories([]);
-            Alert.alert("Éxito", "Todos los presupuestos han sido eliminados.");
-          },
-          style: 'destructive'
-        }
-      ]
-    );
+    // Optional: Implement if needed service-side, otherwise loop delete or truncate
+    Alert.alert("Info", "Función no disponible por seguridad.");
   };
 
   const handleEdit = (category) => {
     setEditingCategory(category);
-    setNewCategoryName(category.name);
-    setNewCategoryAmount(category.amount.toString());
+    setNewCategoryName(category.categoria);
+    setNewCategoryAmount(category.montoLimit.toString());
     setModalVisible(true);
   };
 
@@ -164,32 +164,40 @@ export default function PresupuestoScreen() {
   };
 
   const renderCategoryItem = ({ item }) => {
-    const IconComponent = item.iconType === 'MaterialIcons' ? MaterialIcons : 
-                          item.iconType === 'FontAwesome5' ? FontAwesome5 : 
-                          Ionicons;
+    // Dynamic icon based on category name could be added here
+    const isExceeded = item.spent > item.amount;
 
     return (
-      <View style={styles.category}>
+      <View style={[styles.category, isExceeded && styles.categoryExceeded]}>
         <View style={styles.categoryDetails}>
           <View style={styles.categoryHeader}>
-            <IconComponent name={item.icon} size={24} color="#0f1530" />
+            <Ionicons name="wallet-outline" size={24} color="#0f1530" />
             <Text style={styles.categoryText}>{item.name}</Text>
+            {isExceeded && <Ionicons name="warning" size={20} color="red" style={{ marginLeft: 10 }} />}
           </View>
           <View style={styles.amountBox}>
-            <Text style={styles.amountLabel}>Monto</Text>
-            <Text style={styles.amount}>${item.amount.toFixed(2)}</Text>
+            <View>
+              <Text style={styles.amountLabel}>Límite</Text>
+              <Text style={styles.amount}>${item.amount.toFixed(2)}</Text>
+            </View>
+            <View>
+              <Text style={styles.amountLabel}>Gastado</Text>
+              <Text style={[styles.amount, { color: isExceeded ? 'red' : 'green' }]}>
+                ${item.spent.toFixed(2)}
+              </Text>
+            </View>
           </View>
         </View>
 
         <View style={styles.categoryActions}>
-          <TouchableOpacity 
-            style={styles.actionButton} 
+          <TouchableOpacity
+            style={styles.actionButton}
             onPress={() => handleEdit(item)}
           >
             <MaterialIcons name="edit" size={20} color="#2A7CF7" />
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.actionButton} 
+          <TouchableOpacity
+            style={styles.actionButton}
             onPress={() => handleDelete(item.id)}
           >
             <MaterialIcons name="delete" size={20} color="#D32F2F" />
@@ -211,33 +219,25 @@ export default function PresupuestoScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.option} onPress={() => navigation.navigate("Perfil")}>
-          <Ionicons name="arrow-back" size={24} color="#0f1530" />
-        </TouchableOpacity>
         <Text style={styles.logoText}>Ahorra<Text style={{ color: '#2A7CF7' }}>+</Text> App</Text>
       </View>
 
-      <Text style={styles.title}>Presupuesto</Text>
-      
+      <Text style={styles.title}>Presupuesto Mensual</Text>
+
       <View style={styles.listHeader}>
-        <Text style={styles.subtitle}>Categorías</Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.deleteAllButton} onPress={handleDeleteAll}>
-            <MaterialIcons name="delete-sweep" size={24} color="#D32F2F" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.addButton} onPress={handleAddCategory}>
-            <Ionicons name="add-circle" size={30} color="#2A7CF7" />
-          </TouchableOpacity>
-        </View>
+        <Text style={styles.subtitle}>Mis Presupuestos</Text>
+        <TouchableOpacity style={styles.addButtonIcon} onPress={handleAddCategory}>
+          <Ionicons name="add-circle" size={30} color="#2A7CF7" />
+        </TouchableOpacity>
       </View>
-      
+
       <FlatList
         data={categories}
         renderItem={renderCategoryItem}
-        keyExtractor={item => item.id}
+        keyExtractor={item => item.id.toString()}
         contentContainerStyle={styles.flatListContent}
         ListEmptyComponent={() => (
-          <Text style={styles.emptyText}>No hay categorías de presupuesto añadidas. ¡Agrega una!</Text>
+          <Text style={styles.emptyText}>No hay presupuestos definidos.</Text>
         )}
       />
 
@@ -245,42 +245,32 @@ export default function PresupuestoScreen() {
         animationType="slide"
         transparent={true}
         visible={modalVisible}
-        onRequestClose={() => {
-          setModalVisible(!modalVisible);
-          setEditingCategory(null);
-          setNewCategoryName('');
-          setNewCategoryAmount('');
-        }}
+        onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.centeredView}>
           <View style={styles.modalView}>
             <Text style={styles.modalTitle}>
-              {editingCategory ? "Editar Categoría" : "Nueva Categoría"}
+              {editingCategory ? "Editar Presupuesto" : "Nuevo Presupuesto"}
             </Text>
 
             <TextInput
               style={styles.input}
-              placeholder="Nombre de la Categoría"
+              placeholder="Categoría (ej. Comida)"
               value={newCategoryName}
               onChangeText={setNewCategoryName}
             />
             <TextInput
               style={styles.input}
-              placeholder="Monto Presupuestado"
+              placeholder="Monto Límite"
               value={newCategoryAmount}
               onChangeText={setNewCategoryAmount}
               keyboardType="numeric"
             />
-            
+
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalCancelButton]}
-                onPress={() => {
-                  setModalVisible(false);
-                  setEditingCategory(null);
-                  setNewCategoryName('');
-                  setNewCategoryAmount('');
-                }}
+                onPress={() => setModalVisible(false)}
               >
                 <Text style={styles.modalCancelText}>Cancelar</Text>
               </TouchableOpacity>
@@ -288,7 +278,7 @@ export default function PresupuestoScreen() {
                 style={[styles.modalButton, styles.modalSaveButton]}
                 onPress={handleSaveCategory}
               >
-                <Text style={styles.modalSaveText}>{editingCategory ? "Actualizar" : "Guardar"}</Text>
+                <Text style={styles.modalSaveText}>Guardar</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -299,179 +289,35 @@ export default function PresupuestoScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#fff' 
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: '#0f1530',
-  },
-  header: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    padding: 20 
-  },
-  logoText: { 
-    fontSize: 20, 
-    fontWeight: '700', 
-    marginLeft: 10, 
-    color: '#0f1530' 
-  },
-  title: { 
-    fontSize: 24, 
-    fontWeight: '700', 
-    textAlign: 'center', 
-    color: '#0f1530',
-    marginBottom: 10,
-  },
-  listHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 15,
-  },
-  subtitle: { 
-    fontSize: 18, 
-    fontWeight: '600', 
-    color: '#0f1530' 
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  deleteAllButton: {
-    marginRight: 10,
-    padding: 5,
-  },
-  addButton: {
-  },
-  flatListContent: { 
-    paddingHorizontal: 20, 
-    paddingBottom: 20 
-  },
-  category: { 
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#f7f7f7', 
-    borderRadius: 12, 
-    padding: 15, 
-    marginBottom: 15,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  categoryDetails: {
-    flex: 1,
-  },
-  categoryHeader: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    marginBottom: 8 
-  },
-  categoryText: { 
-    fontSize: 16, 
-    fontWeight: '500', 
-    marginLeft: 8, 
-    color: '#0f1530' 
-  },
-  amountBox: {
-    backgroundColor: '#ededed', 
-    borderRadius: 10,
-    paddingVertical: 8, 
-    paddingHorizontal: 10,
-    flexDirection: 'row', 
-    justifyContent: 'space-between'
-  },
-  amountLabel: { 
-    fontSize: 16, 
-    color: '#0f1530' 
-  },
-  amount: { 
-    fontSize: 16, 
-    fontWeight: '600',
-    color: '#0f1530' 
-  },
-  categoryActions: {
-    flexDirection: 'row',
-    marginLeft: 15,
-  },
-  actionButton: {
-    marginLeft: 10,
-    padding: 5,
-  },
-  emptyText: {
-    textAlign: 'center',
-    marginTop: 50,
-    fontSize: 16,
-    color: '#666',
-  },
-  centeredView: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalView: {
-    margin: 20,
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 35,
-    alignItems: "stretch",
-    elevation: 5,
-    width: '85%',
-    maxWidth: 400,
-  },
-  modalTitle: {
-    marginBottom: 15,
-    textAlign: "center",
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#0f1530',
-  },
-  input: {
-    height: 45,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 15,
-    paddingHorizontal: 10,
-    fontSize: 16,
-  },
-  modalButtonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
-  },
-  modalButton: {
-    borderRadius: 10, 
-    paddingVertical: 12, 
-    width: '48%', 
-    alignItems: 'center',
-  },
-  modalCancelButton: {
-    backgroundColor: '#bfbfbf', 
-  },
-  modalSaveButton: {
-    backgroundColor: '#2A7CF7', 
-  },
-  modalCancelText: { 
-    color: '#0f1530', 
-    fontWeight: 'bold' 
-  },
-  modalSaveText: { 
-    color: '#fff', 
-    fontWeight: 'bold' 
-  },
+  container: { flex: 1, backgroundColor: '#fff', paddingBottom: 60 }, // Added padding for Tabs
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { marginTop: 10, fontSize: 16 },
+  header: { padding: 20, paddingTop: 40, alignItems: 'center' },
+  logoText: { fontSize: 24, fontWeight: '700', color: '#0f1530' },
+  title: { fontSize: 22, fontWeight: '700', textAlign: 'center', marginBottom: 15, color: '#0f1530' },
+  listHeader: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 10, alignItems: 'center' },
+  subtitle: { fontSize: 18, fontWeight: '600', color: '#0f1530' },
+  addButtonIcon: { padding: 5 },
+  flatListContent: { paddingHorizontal: 20, paddingBottom: 20 },
+  category: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f7f7f7', borderRadius: 12, padding: 15, marginBottom: 15, elevation: 2 },
+  categoryExceeded: { borderWidth: 1, borderColor: 'red', backgroundColor: '#fff0f0' },
+  categoryDetails: { flex: 1 },
+  categoryHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  categoryText: { fontSize: 16, fontWeight: '500', marginLeft: 8, color: '#0f1530' },
+  amountBox: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#ededed', borderRadius: 8, padding: 8, marginTop: 5 },
+  amountLabel: { fontSize: 12, color: '#666' },
+  amount: { fontSize: 16, fontWeight: '600', color: '#0f1530' },
+  categoryActions: { marginLeft: 10 },
+  actionButton: { marginVertical: 5 },
+  emptyText: { textAlign: 'center', marginTop: 30, color: '#666' },
+  centeredView: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: 'rgba(0,0,0,0.5)' },
+  modalView: { width: '85%', backgroundColor: "white", borderRadius: 20, padding: 25, elevation: 5 },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 15, textAlign: 'center' },
+  input: { height: 45, borderWidth: 1, borderColor: '#ccc', borderRadius: 8, marginBottom: 15, paddingHorizontal: 10 },
+  modalButtonContainer: { flexDirection: 'row', justifyContent: 'space-between' },
+  modalButton: { borderRadius: 10, paddingVertical: 12, width: '48%', alignItems: 'center' },
+  modalCancelButton: { backgroundColor: '#bfbfbf' },
+  modalSaveButton: { backgroundColor: '#2A7CF7' },
+  modalCancelText: { fontWeight: 'bold' },
+  modalSaveText: { color: '#fff', fontWeight: 'bold' },
 });

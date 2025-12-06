@@ -1,18 +1,18 @@
 import React, { useState } from "react";
-import {View,Text,StyleSheet,ScrollView,TouchableOpacity,Alert,} from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons, Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import GlobalStyles from "../Styles/GlobalStyles";
-import BottomMenu from "./BottomMenu";
+// BottomMenu import removed
 
 const mockCuentas = [
-  { id: 1, banco: "Santander", tipo: "Cuenta de Ahorro", saldo: 25800.50, icon: "bank-outline", color: "#B80000" },
-  { id: 2, banco: "BBVA", tipo: "Cuenta Corriente", saldo: 12500.00, icon: "bank-outline", color: "#000033" },
+    { id: 1, banco: "Santander", tipo: "Cuenta de Ahorro", saldo: 25800.50, icon: "bank-outline", color: "#B80000" },
+    { id: 2, banco: "BBVA", tipo: "Cuenta Corriente", saldo: 12500.00, icon: "bank-outline", color: "#000033" },
 ];
 
 const mockTarjetas = [
-  { id: 101, banco: "Santander", tipo: "Crédito", ultimosDigitos: "4567", icon: "credit-card-outline", color: "#B80000" },
-  { id: 102, banco: "NuBank", tipo: "Débito", ultimosDigitos: "1234", icon: "credit-card-outline", color: "#9C27B0" },
+    { id: 101, banco: "Santander", tipo: "Crédito", ultimosDigitos: "4567", icon: "credit-card-outline", color: "#B80000" },
+    { id: 102, banco: "NuBank", tipo: "Débito", ultimosDigitos: "1234", icon: "credit-card-outline", color: "#9C27B0" },
 ];
 
 const ItemCard = ({ item, esTarjeta }) => {
@@ -38,47 +38,47 @@ const ItemCard = ({ item, esTarjeta }) => {
 
 
 const TarjetasBancosScreen = () => {
-  const navigation = useNavigation();
+    const navigation = useNavigation();
 
-  const totalActivos = mockCuentas.reduce((sum, c) => sum + c.saldo, 0);
+    const totalActivos = mockCuentas.reduce((sum, c) => sum + c.saldo, 0);
 
-  return (
-    <View style={GlobalStyles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#000033" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Tarjetas y Cuentas</Text>
-        <Feather name="plus-circle" size={24} color="#000033" onPress={() => Alert.alert("Añadir", "Añadir nueva cuenta/tarjeta")} />
-      </View>
+    return (
+        <View style={GlobalStyles.container}>
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <Ionicons name="arrow-back" size={24} color="#000033" />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>Tarjetas y Cuentas</Text>
+                <Feather name="plus-circle" size={24} color="#000033" onPress={() => Alert.alert("Añadir", "Añadir nueva cuenta/tarjeta")} />
+            </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} alwaysBounceVertical={false} >
-        
-        <View style={styles.totalCard}>
-            <Text style={styles.totalTitle}>Total de Activos Registrados</Text>
-            <Text style={styles.totalValue}>${totalActivos.toLocaleString('es-MX')}</Text>
-            <Text style={styles.totalFooter}>Este es el total disponible en tus cuentas registradas.</Text>
+            <ScrollView contentContainerStyle={styles.scrollContent} alwaysBounceVertical={false} >
+
+                <View style={styles.totalCard}>
+                    <Text style={styles.totalTitle}>Total de Activos Registrados</Text>
+                    <Text style={styles.totalValue}>${totalActivos.toLocaleString('es-MX')}</Text>
+                    <Text style={styles.totalFooter}>Este es el total disponible en tus cuentas registradas.</Text>
+                </View>
+
+                <Text style={styles.sectionTitle}>Cuentas Bancarias</Text>
+                <View style={styles.sectionContainer}>
+                    {mockCuentas.map(cuenta => (
+                        <ItemCard key={cuenta.id} item={cuenta} esTarjeta={false} />
+                    ))}
+                </View>
+
+                <Text style={styles.sectionTitle}>Tarjetas (Crédito/Débito)</Text>
+                <View style={styles.sectionContainer}>
+                    {mockTarjetas.map(tarjeta => (
+                        <ItemCard key={tarjeta.id} item={tarjeta} esTarjeta={true} />
+                    ))}
+                </View>
+                <View style={{ height: 50 }} />
+            </ScrollView>
+
+            {/* BottomMenu removed */}
         </View>
-
-        <Text style={styles.sectionTitle}>Cuentas Bancarias</Text>
-        <View style={styles.sectionContainer}>
-            {mockCuentas.map(cuenta => (
-                <ItemCard key={cuenta.id} item={cuenta} esTarjeta={false} />
-            ))}
-        </View>
-
-        <Text style={styles.sectionTitle}>Tarjetas (Crédito/Débito)</Text>
-        <View style={styles.sectionContainer}>
-            {mockTarjetas.map(tarjeta => (
-                <ItemCard key={tarjeta.id} item={tarjeta} esTarjeta={true} />
-            ))}
-        </View>
-        <View style={{ height: 50 }} />
-      </ScrollView>
-
-      <BottomMenu />
-    </View>
-  );
+    );
 };
 
 const styles = StyleSheet.create({
@@ -99,11 +99,11 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingHorizontal: 20,
-        paddingBottom: 150, 
+        paddingBottom: 150,
     },
-    
+
     totalCard: {
-        backgroundColor: '#000033', 
+        backgroundColor: '#000033',
         borderRadius: 15,
         padding: 20,
         marginVertical: 15,
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
     totalValue: {
         fontSize: 32,
         fontWeight: 'bold',
-        color: '#4BC0C0', 
+        color: '#4BC0C0',
         marginBottom: 10,
     },
     totalFooter: {
