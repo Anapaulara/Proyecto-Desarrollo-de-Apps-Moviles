@@ -15,10 +15,11 @@ export default function PrincipalScreen() {
     setLoad(true);
     try {
       const u = await AuthService.getSession();
-      if (u) setUser(u);
-
-      const bal = await TransaccionesService.obtenerBalance();
-      setBalance(bal);
+      if (u) {
+        setUser(u);
+        const bal = await TransaccionesService.obtenerBalance(u.id);
+        setBalance(bal);
+      }
 
     } catch (e) {
       console.error(e);

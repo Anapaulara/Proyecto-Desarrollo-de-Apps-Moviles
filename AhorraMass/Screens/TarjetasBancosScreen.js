@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, } from "re
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons, Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import GlobalStyles from "../Styles/GlobalStyles";
-// BottomMenu import removed
 
 const mockCuentas = [
     { id: 1, banco: "Santander", tipo: "Cuenta de Ahorro", saldo: 25800.50, icon: "bank-outline", color: "#B80000" },
@@ -76,7 +75,6 @@ const TarjetasBancosScreen = () => {
                 <View style={{ height: 50 }} />
             </ScrollView>
 
-            {/* BottomMenu removed */}
         </View>
     );
 };

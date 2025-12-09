@@ -18,16 +18,22 @@ class NotificacionesService {
                     leido INTEGER DEFAULT 0
                 );
             `);
+
+            try {
+                await this.db.runAsync(`ALTER TABLE notificaciones ADD COLUMN usuario_id INTEGER;`);
+            } catch (e) { }
+
         } catch (error) {
             console.error('Error initializing notifications table', error);
         }
     }
 
-    async agregar(titulo, mensaje, tipo = 'info') {
+    async agregar(titulo, mensaje, tipo = 'info', usuario_id) {
+        if (!usuario_id) return;
         try {
             const result = await this.db.runAsync(
-                'INSERT INTO notificaciones (titulo, mensaje, tipo) VALUES (?, ?, ?)',
-                [titulo, mensaje, tipo]
+                'INSERT INTO notificaciones (titulo, mensaje, tipo, usuario_id) VALUES (?, ?, ?, ?)',
+                [titulo, mensaje, tipo, usuario_id]
             );
             return result.lastInsertRowId;
         } catch (error) {
@@ -35,10 +41,12 @@ class NotificacionesService {
         }
     }
 
-    async obtenerTodas() {
+    async obtenerTodas(usuario_id) {
+        if (!usuario_id) return [];
         try {
             const result = await this.db.getAllAsync(
-                'SELECT * FROM notificaciones ORDER BY id DESC'
+                'SELECT * FROM notificaciones WHERE usuario_id=? ORDER BY id DESC',
+                [usuario_id]
             );
             return result;
         } catch (error) {
@@ -47,9 +55,10 @@ class NotificacionesService {
         }
     }
 
-    async eliminarTodas() {
+    async eliminarTodas(usuario_id) {
+        if (!usuario_id) return;
         try {
-            await this.db.runAsync('DELETE FROM notificaciones');
+            await this.db.runAsync('DELETE FROM notificaciones WHERE usuario_id=?', [usuario_id]);
         } catch (error) {
             console.error('Error clearing notifications', error);
         }

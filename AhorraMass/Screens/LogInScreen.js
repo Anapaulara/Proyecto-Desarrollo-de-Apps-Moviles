@@ -19,8 +19,10 @@ export default function LogInScreen({ navigation }) {
   const [contrasena, setContrasena] = useState("");
   const [showPass, setShowPass] = useState(false);
 
+  // AuthService.initialize() is handled in App.js
+  // Keeping useEffect empty or removing if not needed.
   useEffect(() => {
-    AuthService.initialize();
+    // Optional: Check session here if auto-login is desired, but App.js might handle it too.
   }, []);
 
   const iniciarSesion = async () => {

@@ -4,6 +4,7 @@ import { Ionicons, MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 import { useNavigation, useIsFocused } from "@react-navigation/native";
 import PresupuestosService from "../src/services/PresupuestosService";
 import TransaccionesService from "../src/services/TransaccionesService";
+import AuthService from "../src/services/AuthService";
 
 export default function PresupuestoScreen() {
   const navigation = useNavigation();
@@ -16,16 +17,20 @@ export default function PresupuestoScreen() {
   const [newCategoryAmount, setNewCategoryAmount] = useState('');
   const [editingCategory, setEditingCategory] = useState(null);
 
-  const loadData = async () => {
+  const [currentUser, setCurrentUser] = useState(null);
+
+  const loadData = async (uid) => {
     try {
       setLoading(true);
-      const budgets = await PresupuestosService.obtenerTodos();
+      // Pass User ID
+      const budgets = await PresupuestosService.obtenerTodos(uid);
 
       const today = new Date();
       const currentMonth = today.toISOString().slice(0, 7);
 
       const budgetsWithStatus = await Promise.all(budgets.map(async (b) => {
-        const transactions = await TransaccionesService.filtrarPorCategoria(b.categoria);
+        // Pass User ID
+        const transactions = await TransaccionesService.filtrarPorCategoria(b.categoria, uid);
 
         const totalSpent = transactions
           .filter(t => {
@@ -75,11 +80,17 @@ export default function PresupuestoScreen() {
 
   useEffect(() => {
     if (isFocused) {
-      loadData();
+      AuthService.getSession().then(u => {
+        if (u) {
+          setCurrentUser(u);
+          loadData(u.id);
+        }
+      });
     }
   }, [isFocused]);
 
   const handleSaveCategory = async () => {
+    if (!currentUser) return;
     if (!newCategoryName || !newCategoryAmount) {
       Alert.alert("Error", "Debes ingresar una categoría y un monto.");
       return;
@@ -99,7 +110,7 @@ export default function PresupuestoScreen() {
         await PresupuestosService.editar(editingCategory.id, newCategoryName, amountValue, currentMonth);
         Alert.alert("Éxito", "Presupuesto actualizado.");
       } else {
-        await PresupuestosService.agregar(newCategoryName, amountValue, currentMonth);
+        await PresupuestosService.agregar(newCategoryName, amountValue, currentMonth, currentUser.id);
         Alert.alert("Éxito", "Presupuesto creado.");
       }
 
@@ -107,7 +118,7 @@ export default function PresupuestoScreen() {
       setNewCategoryName('');
       setNewCategoryAmount('');
       setEditingCategory(null);
-      loadData();
+      loadData(currentUser.id);
 
     } catch (e) {
       console.error("Error saving budget", e);
@@ -116,6 +127,7 @@ export default function PresupuestoScreen() {
   };
 
   const handleDelete = (id) => {
+    if (!currentUser) return;
     Alert.alert(
       "Confirmar Eliminación",
       "¿Estás seguro de que quieres eliminar este presupuesto?",
@@ -125,7 +137,7 @@ export default function PresupuestoScreen() {
           text: "Eliminar",
           onPress: async () => {
             await PresupuestosService.eliminar(id);
-            loadData();
+            loadData(currentUser.id);
           },
           style: 'destructive'
         }
@@ -211,6 +223,7 @@ export default function PresupuestoScreen() {
 
       <Text style={styles.title}>Presupuesto Mensual</Text>
 
+      {/* ... ListHeader, List, Modal ... same structure */}
       <View style={styles.listHeader}>
         <Text style={styles.subtitle}>Mis Presupuestos</Text>
         <TouchableOpacity style={styles.addButtonIcon} onPress={handleAddCategory}>
@@ -276,7 +289,7 @@ export default function PresupuestoScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', paddingBottom: 60 }, 
+  container: { flex: 1, backgroundColor: '#fff', paddingBottom: 60 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { marginTop: 10, fontSize: 16 },
   header: { padding: 20, paddingTop: 40, alignItems: 'center' },

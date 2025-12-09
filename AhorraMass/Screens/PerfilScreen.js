@@ -25,18 +25,27 @@ const NotificacionesScreen = ({ onClose }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadNotifications();
+    // 1. Get session first
+    AuthService.getSession().then(u => {
+      if (u) {
+        setLoading(true);
+        loadNotifications(u.id);
+      }
+    });
   }, []);
 
-  const loadNotifications = async () => {
-    const data = await NotificacionesService.obtenerTodas();
+  const loadNotifications = async (uid) => {
+    const data = await NotificacionesService.obtenerTodas(uid);
     setNotificaciones(data);
     setLoading(false);
   };
 
   const handleClear = async () => {
-    await NotificacionesService.eliminarTodas();
-    loadNotifications();
+    const u = await AuthService.getSession();
+    if (u) {
+      await NotificacionesService.eliminarTodas(u.id);
+      loadNotifications(u.id);
+    }
   };
 
   const renderItem = ({ item }) => {

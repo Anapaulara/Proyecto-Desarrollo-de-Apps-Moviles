@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { PieChart, BarChart, LineChart } from "react-native-chart-kit";
 import { useIsFocused } from "@react-navigation/native";
 import TransaccionesService from "../src/services/TransaccionesService";
+import AuthService from "../src/services/AuthService";
 
 export default function GraficasScreen() {
   const [vista, setVista] = useState("categoria"); // categoria, mes, balance
@@ -16,7 +17,9 @@ export default function GraficasScreen() {
   const [egresosPieData, setEgresosPieData] = useState([]);
   const [ingresosBarData, setIngresosBarData] = useState({ labels: [], datasets: [{ data: [] }] });
   const [egresosLineData, setEgresosLineData] = useState({ labels: [], datasets: [{ data: [] }] });
-  const [balanceData, setBalanceData] = useState([]); // Data for the comparison table
+  const [balanceData, setBalanceData] = useState([]);
+
+  const [currentUser, setCurrentUser] = useState(null);
 
   const chartConfig = {
     backgroundGradientFrom: "#ffffff",
@@ -35,10 +38,11 @@ export default function GraficasScreen() {
     }
   };
 
-  const processData = async () => {
+  const processData = async (uid) => {
     try {
       setLoading(true);
-      const allData = await TransaccionesService.obtenerTodos();
+      // Pass User ID
+      const allData = await TransaccionesService.obtenerTodos(uid);
 
       // --- PIE CHARTS (By Category) ---
       const groupByCategory = (type) => {
@@ -61,13 +65,7 @@ export default function GraficasScreen() {
       setEgresosPieData(groupByCategory("egreso"));
 
       // --- MONTHLY CHARTS & TABLE ---
-      // 1. Group all transactions by YYYY-MM
       const monthlyGroups = allData.reduce((acc, curr) => {
-        // Handle potential date format changes over time, safest is standardized YYYY-MM-DD
-        // We assume standard ISO or similar where first 7 chars are YYYY-MM
-        // If robust parsing needed (like in Budget), apply it. 
-        // For now trusting the service or basic slice if format is YYYY-MM* or YYYY/MM*
-
         let monthKey = "";
         const cleanDate = curr.fecha.replace(/\//g, '-');
         const parts = cleanDate.split('-');
@@ -86,10 +84,7 @@ export default function GraficasScreen() {
         return acc;
       }, {});
 
-      // 2. Sort keys
       const sortedKeys = Object.keys(monthlyGroups).sort();
-
-      // 3. Prepare Chart Data (Last 6 months)
       const recentKeys = sortedKeys.slice(-6);
 
       setIngresosBarData({
@@ -102,9 +97,8 @@ export default function GraficasScreen() {
         datasets: [{ data: recentKeys.length ? recentKeys.map(k => monthlyGroups[k].expense) : [0] }]
       });
 
-      // 4. Prepare Table Data (All months or last 12, reversed for newest first)
       const tableRows = sortedKeys.reverse().map(key => ({
-        month: getMonthName(key) + " " + key.split('-')[0], // e.g. "Dic 2025"
+        month: getMonthName(key) + " " + key.split('-')[0],
         income: monthlyGroups[key].income,
         expense: monthlyGroups[key].expense,
         balance: monthlyGroups[key].income - monthlyGroups[key].expense
@@ -120,7 +114,13 @@ export default function GraficasScreen() {
 
   useEffect(() => {
     if (isFocused) {
-      processData();
+      // Fetch session then data
+      AuthService.getSession().then(u => {
+        if (u) {
+          setCurrentUser(u);
+          processData(u.id);
+        }
+      });
     }
   }, [isFocused]);
 
@@ -358,8 +358,6 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center'
   },
-
-  // Table Styles
   tableContainer: {
     marginHorizontal: 20,
     backgroundColor: "#fff",

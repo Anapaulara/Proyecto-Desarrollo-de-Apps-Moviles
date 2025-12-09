@@ -3,12 +3,15 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Modal,
 import { FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import TransaccionesService from "../src/services/TransaccionesService";
 import NotificacionesService from "../src/services/NotificacionesService";
+import AuthService from "../src/services/AuthService";
 
+// ⭐ CATEGORÍAS OFICIALES
 const categoriasIngresos = ["Sueldo", "Negocio", "Intereses", "Otros"];
 const categoriasEgresos = ["Comida", "Transporte", "Entretenimiento", "Hogar", "Ropa", "Salud", "Otros"];
 
 export default function RegScreen() {
   const [registros, setRegistros] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [modalMode, setModalMode] = useState('add');
@@ -21,17 +24,29 @@ export default function RegScreen() {
   const [descripcion, setDescripcion] = useState('');
   const [fecha, setFecha] = useState('');
 
+  // Filtros
   const [filtroCategoria, setFiltroCategoria] = useState('');
   const [fechaInicio, setFechaInicio] = useState('');
   const [fechaFin, setFechaFin] = useState('');
 
   useEffect(() => {
-    cargarRegistros();
+    // 1. Get Session first
+    const init = async () => {
+      const u = await AuthService.getSession();
+      if (u) {
+        setCurrentUser(u);
+        cargarRegistros(u.id);
+      }
+    };
+    init();
   }, []);
 
-  const cargarRegistros = async () => {
+  const cargarRegistros = async (uid) => {
+    const idToUse = uid || currentUser?.id;
+    if (!idToUse) return;
+
     try {
-      const data = await TransaccionesService.obtenerTodos();
+      const data = await TransaccionesService.obtenerTodos(idToUse);
       setRegistros(data);
     } catch (error) {
       console.log("Error cargando registros:", error);
@@ -42,7 +57,6 @@ export default function RegScreen() {
     if (!dateStr) return null;
     let normalized = dateStr.replace(/\//g, '-');
     const parts = normalized.split('-');
-
     if (parts.length !== 3) return null;
 
     let y, m, d;
@@ -53,15 +67,15 @@ export default function RegScreen() {
     } else {
       return null;
     }
-
     if (parseInt(m) > 12 || parseInt(d) > 31) return null;
-
     return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
   };
 
   const aplicarFiltros = async () => {
+    if (!currentUser) return;
+
     try {
-      let data = await TransaccionesService.obtenerTodos();
+      let data = await TransaccionesService.obtenerTodos(currentUser.id);
 
       if (filtroCategoria) {
         data = data.filter(item => item.categoria === filtroCategoria);
@@ -74,18 +88,13 @@ export default function RegScreen() {
         data = data.filter(item => {
           const itemDate = parseDate(item.fecha);
           if (!itemDate) return false;
-
           if (inicio && itemDate < inicio) return false;
           if (fin && itemDate > fin) return false;
-
           return true;
         });
       }
 
       setRegistros(data);
-
-      if (data.length === 0) {
-      }
 
     } catch (error) {
       console.error("Filtro Error:", error);
@@ -96,7 +105,7 @@ export default function RegScreen() {
     setFiltroCategoria('');
     setFechaInicio('');
     setFechaFin('');
-    cargarRegistros();
+    if (currentUser) cargarRegistros(currentUser.id);
   };
 
   const abrirAgregar = () => {
@@ -124,6 +133,7 @@ export default function RegScreen() {
   };
 
   const guardarRegistro = async () => {
+    if (!currentUser) return;
     if (!nombre.trim() || !monto.trim() || !categoria.trim() || !fecha.trim()) {
       Alert.alert("Error", "Completa todos los campos obligatorios.");
       return;
@@ -137,13 +147,15 @@ export default function RegScreen() {
           nombre,
           parseFloat(monto),
           fecha,
-          descripcion
+          descripcion,
+          currentUser.id // Pass User ID
         );
 
         await NotificacionesService.agregar(
           "Nuevo Movimiento",
           `Has registrado un ${tipo} de $${monto} en ${categoria}.`,
-          tipo === 'ingreso' ? 'success' : 'warning'
+          tipo === 'ingreso' ? 'success' : 'warning',
+          currentUser.id // Pass User ID
         );
         Alert.alert("Éxito", "Movimiento registrado y notificado.");
 
@@ -160,7 +172,7 @@ export default function RegScreen() {
       }
 
       setModalVisible(false);
-      cargarRegistros();
+      cargarRegistros(currentUser.id);
     } catch (error) {
       Alert.alert("Error", "No se pudo guardar el registro.");
       console.log("ERROR guardar:", error);
@@ -175,7 +187,7 @@ export default function RegScreen() {
         style: "destructive",
         onPress: async () => {
           await TransaccionesService.eliminar(id);
-          cargarRegistros();
+          if (currentUser) cargarRegistros(currentUser.id);
         }
       }
     ]);
@@ -183,7 +195,6 @@ export default function RegScreen() {
 
   return (
     <View style={styles.container}>
-
       <View style={styles.header}>
         <Text style={styles.titulo}>Transacciones</Text>
       </View>
@@ -241,7 +252,6 @@ export default function RegScreen() {
             </TouchableOpacity>
           )}
         </View>
-
       </View>
 
       <ScrollView style={styles.lista}>
@@ -280,7 +290,6 @@ export default function RegScreen() {
         <View style={styles.modalContainer}>
           <View style={styles.modalView}>
             <Text style={styles.modalTitulo}>{modalMode === "add" ? "Agregar" : "Editar"}</Text>
-            {/* ... Modal inputs ... */}
             <View style={styles.row}>
               <TouchableOpacity style={[styles.tipoBtn, tipo === "ingreso" && styles.tipoSeleccionado]} onPress={() => setTipo("ingreso")}>
                 <Text style={styles.tipoText}>Ingreso</Text>
@@ -333,24 +342,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 5
   },
-
   catBtn: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: "#fff", borderRadius: 15, marginRight: 8, borderWidth: 1, borderColor: '#ddd' },
   catText: { fontSize: 13, color: '#333' },
-
   dateFilterRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 },
   labelDates: { fontSize: 12, fontWeight: 'bold', color: '#555', marginBottom: 2 },
   inputDate: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 8, fontSize: 13 },
-
   lista: { padding: 10 },
   item: { flexDirection: "row", backgroundColor: "#fff", padding: 15, borderRadius: 12, marginBottom: 10, elevation: 1, borderWidth: 1, borderColor: '#eee' },
   itemTitulo: { fontSize: 16, fontWeight: "bold", color: '#333' },
   itemSub: { color: "#666", fontSize: 12, marginTop: 2 },
   itemDesc: { fontSize: 12, color: "#999", marginTop: 2, fontStyle: 'italic' },
   monto: { fontWeight: "bold", marginHorizontal: 10, fontSize: 16, alignSelf: 'center' },
-
   addButton: { position: 'absolute', bottom: 30, right: 30, backgroundColor: "#001A72", width: 60, height: 60, borderRadius: 30, alignItems: "center", justifyContent: 'center', elevation: 5 },
   addText: { color: "#fff", fontSize: 30, marginTop: -2 },
-
   modalContainer: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" },
   modalView: { backgroundColor: "#fff", width: "90%", padding: 20, borderRadius: 20 },
   modalTitulo: { fontSize: 20, fontWeight: "bold", textAlign: "center", marginBottom: 12 },

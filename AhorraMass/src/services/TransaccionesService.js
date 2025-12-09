@@ -16,14 +16,21 @@ const TransaccionesService = {
           descripcion TEXT
         );
       `);
+
+      // Migration: Add usuario_id if not exists
+      try {
+        await db.runAsync(`ALTER TABLE transacciones ADD COLUMN usuario_id INTEGER;`);
+      } catch (e) {
+        // Column likely exists
+      }
     });
   },
 
-  agregar: async (tipo, categoria, nombre, monto, fecha, descripcion) => {
+  agregar: async (tipo, categoria, nombre, monto, fecha, descripcion, usuario_id) => {
     return await db.runAsync(
-      `INSERT INTO transacciones (tipo, categoria, nombre, monto, fecha, descripcion)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [tipo, categoria, nombre, monto, fecha, descripcion]
+      `INSERT INTO transacciones (tipo, categoria, nombre, monto, fecha, descripcion, usuario_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [tipo, categoria, nombre, monto, fecha, descripcion, usuario_id]
     );
   },
 
@@ -40,31 +47,37 @@ const TransaccionesService = {
     return await db.runAsync(`DELETE FROM transacciones WHERE id=?`, [id]);
   },
 
-  obtenerTodos: async () => {
+  obtenerTodos: async (usuario_id) => {
+    // If no user_id passed, return empty to be safe or all? Better safe.
+    if (!usuario_id) return [];
     return await db.getAllAsync(
-      `SELECT * FROM transacciones ORDER BY fecha DESC`
+      `SELECT * FROM transacciones WHERE usuario_id = ? ORDER BY fecha DESC`,
+      [usuario_id]
     );
   },
 
-  filtrarPorCategoria: async (categoria) => {
+  filtrarPorCategoria: async (categoria, usuario_id) => {
+    if (!usuario_id) return [];
     return await db.getAllAsync(
-      `SELECT * FROM transacciones WHERE categoria=? ORDER BY fecha DESC`,
-      [categoria]
+      `SELECT * FROM transacciones WHERE LOWER(categoria) = LOWER(?) AND usuario_id=? ORDER BY fecha DESC`,
+      [categoria, usuario_id]
     );
   },
 
-  filtrarPorFecha: async (fechaInicio, fechaFin) => {
+  filtrarPorFecha: async (fechaInicio, fechaFin, usuario_id) => {
+    if (!usuario_id) return [];
     return await db.getAllAsync(
-      `SELECT * FROM transacciones WHERE fecha BETWEEN ? AND ? ORDER BY fecha DESC`,
-      [fechaInicio, fechaFin]
+      `SELECT * FROM transacciones WHERE usuario_id=? AND fecha BETWEEN ? AND ? ORDER BY fecha DESC`,
+      [usuario_id, fechaInicio, fechaFin]
     );
   },
 
-  obtenerPorMesYCategoria: async (mes, categoria) => {
+  obtenerPorMesYCategoria: async (mes, categoria, usuario_id) => {
+    if (!usuario_id) return [];
     try {
       const result = await db.getAllAsync(
-        `SELECT * FROM transacciones WHERE categoria=? AND strftime('%Y-%m', fecha) = ?`,
-        [categoria, mes]
+        `SELECT * FROM transacciones WHERE categoria=? AND usuario_id=? AND strftime('%Y-%m', fecha) = ?`,
+        [categoria, usuario_id, mes]
       );
       return result;
     } catch (e) {
@@ -73,9 +86,10 @@ const TransaccionesService = {
     }
   },
 
-  obtenerBalance: async () => {
+  obtenerBalance: async (usuario_id) => {
+    if (!usuario_id) return { ingresos: 0, egresos: 0, total: 0 };
     try {
-      const all = await db.getAllAsync(`SELECT * FROM transacciones`);
+      const all = await db.getAllAsync(`SELECT * FROM transacciones WHERE usuario_id=?`, [usuario_id]);
       let ingresos = 0;
       let egresos = 0;
 

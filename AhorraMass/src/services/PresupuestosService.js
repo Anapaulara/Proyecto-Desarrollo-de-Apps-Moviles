@@ -13,17 +13,21 @@ const PresupuestosService = {
           fecha TEXT -- Formato YYYY-MM
         );
       `);
+            try {
+                await db.runAsync(`ALTER TABLE presupuestos ADD COLUMN usuario_id INTEGER;`);
+            } catch (e) { }
         });
     },
 
-    agregar: async (categoria, montoLimit, fecha) => {
+    agregar: async (categoria, montoLimit, fecha, usuario_id) => {
         return await db.runAsync(
-            `INSERT INTO presupuestos (categoria, montoLimit, fecha) VALUES (?, ?, ?)`,
-            [categoria, montoLimit, fecha]
+            `INSERT INTO presupuestos (categoria, montoLimit, fecha, usuario_id) VALUES (?, ?, ?, ?)`,
+            [categoria, montoLimit, fecha, usuario_id]
         );
     },
 
     editar: async (id, categoria, montoLimit, fecha) => {
+        // Edit doesn't strictly need user_id in WHERE if ID is unique, but safer
         return await db.runAsync(
             `UPDATE presupuestos SET categoria=?, montoLimit=?, fecha=? WHERE id=?`,
             [categoria, montoLimit, fecha, id]
@@ -34,14 +38,16 @@ const PresupuestosService = {
         return await db.runAsync(`DELETE FROM presupuestos WHERE id=?`, [id]);
     },
 
-    obtenerTodos: async () => {
-        return await db.getAllAsync(`SELECT * FROM presupuestos ORDER BY fecha DESC`);
+    obtenerTodos: async (usuario_id) => {
+        if (!usuario_id) return [];
+        return await db.getAllAsync(`SELECT * FROM presupuestos WHERE usuario_id=? ORDER BY fecha DESC`, [usuario_id]);
     },
 
-    verificarPresupuesto: async (categoria, mes) => {
+    verificarPresupuesto: async (categoria, mes, usuario_id) => {
+        if (!usuario_id) return null;
         const result = await db.getAllAsync(
-            `SELECT * FROM presupuestos WHERE categoria=? AND fecha=?`,
-            [categoria, mes]
+            `SELECT * FROM presupuestos WHERE categoria=? AND fecha=? AND usuario_id=?`,
+            [categoria, mes, usuario_id]
         );
         return result.length > 0 ? result[0] : null;
     }
