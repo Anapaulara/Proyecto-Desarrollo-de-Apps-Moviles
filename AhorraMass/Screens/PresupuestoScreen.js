@@ -16,46 +16,36 @@ export default function PresupuestoScreen() {
   const [newCategoryAmount, setNewCategoryAmount] = useState('');
   const [editingCategory, setEditingCategory] = useState(null);
 
-  // Load budgets and check status
   const loadData = async () => {
     try {
       setLoading(true);
       const budgets = await PresupuestosService.obtenerTodos();
 
-      // Calculate current spending per category for the current month
       const today = new Date();
-      // currentMonth format YYYY-MM
       const currentMonth = today.toISOString().slice(0, 7);
 
       const budgetsWithStatus = await Promise.all(budgets.map(async (b) => {
-        // Get all transactions for this category (we filter by date in JS to handle mixed formats)
         const transactions = await TransaccionesService.filtrarPorCategoria(b.categoria);
 
         const totalSpent = transactions
           .filter(t => {
             if (t.tipo !== 'egreso') return false;
 
-            // Normalize separator: replace all / with -
             const cleanDate = t.fecha.replace(/\//g, '-');
             const parts = cleanDate.split('-');
 
             let tMonth = "";
 
             if (parts.length === 3) {
-              // Check where the year is (4 digits)
               if (parts[0].length === 4) {
-                // YYYY-MM-DD
                 tMonth = `${parts[0]}-${parts[1]}`;
               } else if (parts[2].length === 4) {
-                // DD-MM-YYYY
                 tMonth = `${parts[2]}-${parts[1]}`;
               }
             } else {
-              // Fallback if format is unexpected, take first 7 chars if standard ISO
               tMonth = cleanDate.substring(0, 7);
             }
 
-            // Debug log could be added here if needed
             return tMonth === currentMonth;
           })
           .reduce((sum, t) => sum + t.monto, 0);
@@ -71,7 +61,6 @@ export default function PresupuestoScreen() {
 
       setCategories(budgetsWithStatus);
 
-      // Check for notifications
       const exceeded = budgetsWithStatus.filter(b => b.isExceeded);
       if (exceeded.length > 0) {
         Alert.alert("¡Alerta de Presupuesto!", `Has excedido el presupuesto en: ${exceeded.map(b => b.categoria).join(", ")}`);
@@ -145,7 +134,6 @@ export default function PresupuestoScreen() {
   };
 
   const handleDeleteAll = () => {
-    // Optional: Implement if needed service-side, otherwise loop delete or truncate
     Alert.alert("Info", "Función no disponible por seguridad.");
   };
 
@@ -164,7 +152,6 @@ export default function PresupuestoScreen() {
   };
 
   const renderCategoryItem = ({ item }) => {
-    // Dynamic icon based on category name could be added here
     const isExceeded = item.spent > item.amount;
 
     return (
@@ -289,7 +276,7 @@ export default function PresupuestoScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', paddingBottom: 60 }, // Added padding for Tabs
+  container: { flex: 1, backgroundColor: '#fff', paddingBottom: 60 }, 
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { marginTop: 10, fontSize: 16 },
   header: { padding: 20, paddingTop: 40, alignItems: 'center' },

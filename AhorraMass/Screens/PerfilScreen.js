@@ -11,40 +11,80 @@ import {
   TextInput,
   Switch,
   Platform,
-  StatusBar
+  StatusBar,
+  FlatList
 } from "react-native";
 import { Ionicons, MaterialIcons, Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import GlobalStyles from "../Styles/GlobalStyles";
 import AuthService from "../src/services/AuthService";
+import NotificacionesService from "../src/services/NotificacionesService";
 
 const NotificacionesScreen = ({ onClose }) => {
+  const [notificaciones, setNotificaciones] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadNotifications();
+  }, []);
+
+  const loadNotifications = async () => {
+    const data = await NotificacionesService.obtenerTodas();
+    setNotificaciones(data);
+    setLoading(false);
+  };
+
+  const handleClear = async () => {
+    await NotificacionesService.eliminarTodas();
+    loadNotifications();
+  };
+
+  const renderItem = ({ item }) => {
+    let iconName = "bell";
+    let iconColor = "#FFA000";
+
+    if (item.tipo === 'warning') { iconName = "warning-outline"; iconColor = "#D32F2F"; }
+    else if (item.tipo === 'success') { iconName = "checkmark-circle-outline"; iconColor = "#2E7D32"; }
+
+    return (
+      <View style={styles.notificationCard}>
+        <Ionicons name={iconName} size={24} color={iconColor} style={{ marginRight: 10 }} />
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontWeight: 'bold', color: '#1A237E' }}>{item.titulo}</Text>
+          <Text style={styles.notificationText}>{item.mensaje}</Text>
+        </View>
+      </View>
+    );
+  };
+
   return (
     <View style={GlobalStyles.modalContenedor}>
-      {/* Added explicit style overrides to fix narrow width issue caused by GlobalStyles.modalVista */}
       <View style={[GlobalStyles.modalVista, styles.fullModalFixed]}>
         <View style={styles.notificationHeader}>
           <TouchableOpacity onPress={onClose} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#000033" />
           </TouchableOpacity>
           <Text style={styles.notificationTitle}>Tus Notificaciones</Text>
-          <View style={{ width: 40 }} />
+          <TouchableOpacity onPress={handleClear}>
+            <Ionicons name="trash-outline" size={22} color="#D32F2F" />
+          </TouchableOpacity>
         </View>
-        <ScrollView style={{ paddingHorizontal: 20, paddingTop: 10 }}>
-          <View style={styles.notificationCard}>
-            <Feather name="bell" size={20} color="#FFA000" style={{ marginRight: 10 }} />
-            <Text style={styles.notificationText}>¡Felicidades! Lograste tu objetivo de ahorro de Diciembre.</Text>
-          </View>
-          <View style={styles.notificationCard}>
-            <Ionicons name="warning-outline" size={20} color="#D32F2F" style={{ marginRight: 10 }} />
-            <Text style={styles.notificationText}>Tu presupuesto de <Text style={{ fontWeight: 'bold' }}>comida</Text> ha llegado al 80%.</Text>
-          </View>
-          <View style={styles.notificationCard}>
-            <Ionicons name="stats-chart-outline" size={20} color="#1976D2" style={{ marginRight: 10 }} />
-            <Text style={styles.notificationText}>Nuevo resumen mensual de gastos disponible.</Text>
-          </View>
-        </ScrollView>
-        {/* ADDED: Explicit Close Button at bottom */}
+
+        <View style={{ flex: 1, width: '100%', paddingHorizontal: 20 }}>
+          {notificaciones.length === 0 ? (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+              <Text style={{ color: '#999' }}>No tienes notificaciones nuevas.</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={notificaciones}
+              renderItem={renderItem}
+              keyExtractor={item => item.id.toString()}
+              contentContainerStyle={{ paddingTop: 10, paddingBottom: 20 }}
+            />
+          )}
+        </View>
+
         <View style={{ padding: 20, width: '100%' }}>
           <TouchableOpacity
             style={styles.primaryButton}
@@ -136,7 +176,7 @@ export default function PerfilScreen() {
       }
     };
     loadSession();
-  }, [modalMenuCuenta]); // Reload if account menu changes (implies edits)
+  }, [modalMenuCuenta]);
 
   const guardarNombreApellido = () => {
     if (!NewUsername || !NewLastname) {
@@ -165,7 +205,6 @@ export default function PerfilScreen() {
   };
 
   const guardarPassword = () => {
-    // Simulación
     Alert.alert("Éxito", "Contraseña actualizada.");
     setNuevaPass("");
     setModalPassword(false);
@@ -239,7 +278,6 @@ export default function PerfilScreen() {
   );
 
   return (
-    // Replaced SafeAreaView with View and paddingTop
     <View style={styles.containerSafe}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <View style={styles.headerBar}>
@@ -256,7 +294,6 @@ export default function PerfilScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Profile Card */}
         <View style={styles.profileCard}>
           <View style={styles.profileImageContainer}>
             <Image
@@ -270,19 +307,16 @@ export default function PerfilScreen() {
           <Text style={styles.userEmail}>{currentEmail}</Text>
         </View>
 
-        {/* Section 1 */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Cuenta</Text>
           {menuOptions.map(renderOption)}
         </View>
 
-        {/* Section 2 */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>General</Text>
           {settingOptions.map(renderOption)}
         </View>
 
-        {/* Logout */}
         <TouchableOpacity
           style={styles.logoutButton}
           onPress={() => setModalLogout(true)}
@@ -292,14 +326,11 @@ export default function PerfilScreen() {
         </TouchableOpacity>
       </ScrollView>
 
-      {/* ------ MODALS ------ */}
-
-      {/* Account Menu Modal */}
       <Modal animationType="fade" transparent={true} visible={modalMenuCuenta} onRequestClose={() => setModalMenuCuenta(false)}>
         <View style={GlobalStyles.modalContenedor}>
           <View style={GlobalStyles.modalVista}>
             <Text style={GlobalStyles.modalTitulo}>Opciones de Cuenta</Text>
-
+            {/* ... simplified for brevity, logic remains same */}
             <TouchableOpacity style={styles.modalMenuOption} onPress={() => { setModalMenuCuenta(false); setModalNombreApellido(true); }}>
               <View style={[styles.iconContainerSm, { backgroundColor: '#E3F2FD' }]}>
                 <Ionicons name="person-outline" size={18} color="#1976D2" />
@@ -334,7 +365,6 @@ export default function PerfilScreen() {
         </View>
       </Modal>
 
-      {/* Input Modals (Name, Email, Password) - Reusing similar styles */}
       <Modal animationType="slide" transparent={true} visible={modalNombreApellido} onRequestClose={() => setModalNombreApellido(false)}>
         <View style={GlobalStyles.modalContenedor}>
           <View style={GlobalStyles.modalVista}>
@@ -387,7 +417,6 @@ export default function PerfilScreen() {
         </View>
       </Modal>
 
-      {/* Logout Modal */}
       <Modal animationType="fade" transparent={true} visible={modalLogout} onRequestClose={() => setModalLogout(false)}>
         <View style={GlobalStyles.modalContenedor}>
           <View style={GlobalStyles.modalVista}>
@@ -424,7 +453,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 10, // Adjusted as StatusBar takes height 
+    paddingTop: 10,
     paddingBottom: 15,
     backgroundColor: '#fff',
     elevation: 2,
@@ -518,7 +547,6 @@ const styles = StyleSheet.create({
   },
   logoutText: { color: '#D32F2F', fontWeight: 'bold', fontSize: 16, marginLeft: 10 },
 
-  // Modal Specific Styles
   modalButtonRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginTop: 20 },
   primaryButton: {
     flex: 1,
@@ -559,14 +587,12 @@ const styles = StyleSheet.create({
     fontWeight: '500'
   },
 
-  // Notification Modal
-  // FIXED: Explicitly added style 'fullModalFixed' to override centered styles from global modal
   fullModalFixed: {
     width: '100%',
     height: '100%',
     borderRadius: 0,
-    alignItems: 'flex-start', // Important: removes center alignment that squeezed scrollview
-    padding: 0 // Remove default modal padding
+    alignItems: 'flex-start',
+    padding: 0
   },
   notificationHeader: {
     width: '100%',
@@ -589,11 +615,10 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: '#2979FF',
     elevation: 1,
-    width: '100%' // Ensure full width
+    width: '100%'
   },
-  notificationText: { flex: 1, fontSize: 15, color: '#424242', lineHeight: 22 },
+  notificationText: { flex: 1, fontSize: 14, color: '#424242', marginTop: 2 },
 
-  // Config Modal
   configOptionContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',

@@ -1,11 +1,5 @@
 import * as SQLite from "expo-sqlite";
 
-// Open database synchronously or asynchronously depending on Expo version, 
-// but referencing consistent usage from other services.
-// Note: In newer expo-sqlite, openDatabaseSync is preferred if available, or openDatabaseAsync.
-// Based on TransaccionesService using openDatabaseSync("miDB.db"), we will use the same DB or a new one?
-// Let's use the same "miDB.db" to keep data centralized or "presupuestos.db". 
-// To allow easy relation checks, same DB is better.
 const db = SQLite.openDatabaseSync("miDB.db");
 
 const PresupuestosService = {
@@ -45,7 +39,6 @@ const PresupuestosService = {
     },
 
     verificarPresupuesto: async (categoria, mes) => {
-        // Returns the budget for a specific category and updated month
         const result = await db.getAllAsync(
             `SELECT * FROM presupuestos WHERE categoria=? AND fecha=?`,
             [categoria, mes]

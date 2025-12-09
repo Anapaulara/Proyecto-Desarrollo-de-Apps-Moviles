@@ -19,7 +19,6 @@ const TransaccionesService = {
     });
   },
 
-  // ⭐ AGREGAR
   agregar: async (tipo, categoria, nombre, monto, fecha, descripcion) => {
     return await db.runAsync(
       `INSERT INTO transacciones (tipo, categoria, nombre, monto, fecha, descripcion)
@@ -28,7 +27,6 @@ const TransaccionesService = {
     );
   },
 
-  // ⭐ EDITAR
   editar: async (id, tipo, categoria, nombre, monto, fecha, descripcion) => {
     return await db.runAsync(
       `UPDATE transacciones 
@@ -38,19 +36,16 @@ const TransaccionesService = {
     );
   },
 
-  // ⭐ ELIMINAR
   eliminar: async (id) => {
     return await db.runAsync(`DELETE FROM transacciones WHERE id=?`, [id]);
   },
 
-  // ⭐ OBTENER TODOS
   obtenerTodos: async () => {
     return await db.getAllAsync(
       `SELECT * FROM transacciones ORDER BY fecha DESC`
     );
   },
 
-  // ⭐ FILTRAR POR CATEGORÍA
   filtrarPorCategoria: async (categoria) => {
     return await db.getAllAsync(
       `SELECT * FROM transacciones WHERE categoria=? ORDER BY fecha DESC`,
@@ -58,7 +53,6 @@ const TransaccionesService = {
     );
   },
 
-  // ⭐ FILTRAR POR FECHA (Range)
   filtrarPorFecha: async (fechaInicio, fechaFin) => {
     return await db.getAllAsync(
       `SELECT * FROM transacciones WHERE fecha BETWEEN ? AND ? ORDER BY fecha DESC`,
@@ -66,11 +60,8 @@ const TransaccionesService = {
     );
   },
 
-  // ⭐ OBTENER TOTAL POR CATEGORIA EN UN MES
   obtenerPorMesYCategoria: async (mes, categoria) => {
-    // fecha format YYYY-MM-DD. mes format YYYY-MM
     try {
-      // SQLite strftime('%Y-%m', fecha) extracts the month
       const result = await db.getAllAsync(
         `SELECT * FROM transacciones WHERE categoria=? AND strftime('%Y-%m', fecha) = ?`,
         [categoria, mes]
@@ -82,7 +73,6 @@ const TransaccionesService = {
     }
   },
 
-  // ⭐ OBTENER BALANCE TOTAL
   obtenerBalance: async () => {
     try {
       const all = await db.getAllAsync(`SELECT * FROM transacciones`);

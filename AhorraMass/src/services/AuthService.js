@@ -86,9 +86,7 @@ class AuthService {
         }
     }
 
-    // ⭐ SESSION (Simple AsyncStorage wrapper could be here or separate)
-    // For simplicity, we assume the caller handles AsyncStorage or we add it here.
-    // Let's add it here to keep Auth logic encapsulated.
+    
 }
 
 import AsyncStorage from '@react-native-async-storage/async-storage';

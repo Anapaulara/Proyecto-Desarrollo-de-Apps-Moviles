@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Switch, } 
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons, Feather, MaterialIcons } from "@expo/vector-icons";
 import GlobalStyles from "../Styles/GlobalStyles";
-// BottomMenu import removed
 
 
 const PrivacidadDatosScreen = () => {
@@ -99,7 +98,6 @@ const PrivacidadDatosScreen = () => {
         <View style={{ height: 50 }} />
       </ScrollView>
 
-      {/* BottomMenu removed */}
     </View>
   );
 };

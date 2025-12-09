@@ -89,7 +89,6 @@ function MainTabs() {
 
 export default function App() {
   useEffect(() => {
-    // inicializar DBs (sync API)
     const initDB = async () => {
       try {
         await TransaccionesService.initialize();
@@ -106,19 +105,15 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {/* Auth Flow */}
         <Stack.Screen name="LogIn" component={LogInScreen} />
         <Stack.Screen name="SignIn" component={SignInScreen} />
         <Stack.Screen name="Recuperar" component={RecuperarPasswordScreen} />
 
-        {/* Main App via Tabs */}
         <Stack.Screen name="Main" component={MainTabs} />
 
-        {/* Other screens */}
         <Stack.Screen name="TarjetasBancos" component={TarjetasBancosScreen} />
         <Stack.Screen name="PrivacidadDatos" component={PrivacidadDatosScreen} />
 
-        {/* Backwards compatibility aliases if logic inside screens navigates here */}
         <Stack.Screen name="Principal" component={MainTabs} />
         <Stack.Screen name="Registros" component={MainTabs} />
         <Stack.Screen name="Graficas" component={MainTabs} />

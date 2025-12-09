@@ -6,7 +6,7 @@ import { useIsFocused } from "@react-navigation/native";
 import TransaccionesService from "../src/services/TransaccionesService";
 
 export default function GraficasScreen() {
-  const [vista, setVista] = useState("categoria");
+  const [vista, setVista] = useState("categoria"); // categoria, mes, balance
   const isFocused = useIsFocused();
   const { width } = useWindowDimensions();
   const chartWidth = width - 40;
@@ -16,6 +16,7 @@ export default function GraficasScreen() {
   const [egresosPieData, setEgresosPieData] = useState([]);
   const [ingresosBarData, setIngresosBarData] = useState({ labels: [], datasets: [{ data: [] }] });
   const [egresosLineData, setEgresosLineData] = useState({ labels: [], datasets: [{ data: [] }] });
+  const [balanceData, setBalanceData] = useState([]); // Data for the comparison table
 
   const chartConfig = {
     backgroundGradientFrom: "#ffffff",
@@ -59,30 +60,56 @@ export default function GraficasScreen() {
       setIngresosPieData(groupByCategory("ingreso"));
       setEgresosPieData(groupByCategory("egreso"));
 
-      // --- MONTHLY CHARTS ---
-      // Group by YYYY-MM
-      const groupByMonth = (type) => {
-        const filtered = allData.filter(t => t.tipo === type);
-        // Assuming t.fecha is 'YYYY-MM-DD'
-        const grouped = filtered.reduce((acc, curr) => {
-          const month = curr.fecha.substring(0, 7); // YYYY-MM
-          acc[month] = (acc[month] || 0) + curr.monto;
-          return acc;
-        }, {});
+      // --- MONTHLY CHARTS & TABLE ---
+      // 1. Group all transactions by YYYY-MM
+      const monthlyGroups = allData.reduce((acc, curr) => {
+        // Handle potential date format changes over time, safest is standardized YYYY-MM-DD
+        // We assume standard ISO or similar where first 7 chars are YYYY-MM
+        // If robust parsing needed (like in Budget), apply it. 
+        // For now trusting the service or basic slice if format is YYYY-MM* or YYYY/MM*
 
-        // Sort by date key
-        const sortedKeys = Object.keys(grouped).sort();
-        // Take last 6 months for readability
-        const recentKeys = sortedKeys.slice(-6);
+        let monthKey = "";
+        const cleanDate = curr.fecha.replace(/\//g, '-');
+        const parts = cleanDate.split('-');
+        if (parts.length === 3) {
+          if (parts[0].length === 4) monthKey = `${parts[0]}-${parts[1]}`;
+          else if (parts[2].length === 4) monthKey = `${parts[2]}-${parts[1]}`;
+        } else {
+          monthKey = cleanDate.substring(0, 7);
+        }
 
-        return {
-          labels: recentKeys.length ? recentKeys.map(k => getMonthName(k)) : ["Sin datos"],
-          datasets: [{ data: recentKeys.length ? recentKeys.map(k => grouped[k]) : [0] }]
-        };
-      };
+        if (!acc[monthKey]) acc[monthKey] = { income: 0, expense: 0 };
 
-      setIngresosBarData(groupByMonth("ingreso"));
-      setEgresosLineData(groupByMonth("egreso"));
+        if (curr.tipo === 'ingreso') acc[monthKey].income += curr.monto;
+        else if (curr.tipo === 'egreso') acc[monthKey].expense += curr.monto;
+
+        return acc;
+      }, {});
+
+      // 2. Sort keys
+      const sortedKeys = Object.keys(monthlyGroups).sort();
+
+      // 3. Prepare Chart Data (Last 6 months)
+      const recentKeys = sortedKeys.slice(-6);
+
+      setIngresosBarData({
+        labels: recentKeys.length ? recentKeys.map(k => getMonthName(k)) : ["Sin datos"],
+        datasets: [{ data: recentKeys.length ? recentKeys.map(k => monthlyGroups[k].income) : [0] }]
+      });
+
+      setEgresosLineData({
+        labels: recentKeys.length ? recentKeys.map(k => getMonthName(k)) : ["Sin datos"],
+        datasets: [{ data: recentKeys.length ? recentKeys.map(k => monthlyGroups[k].expense) : [0] }]
+      });
+
+      // 4. Prepare Table Data (All months or last 12, reversed for newest first)
+      const tableRows = sortedKeys.reverse().map(key => ({
+        month: getMonthName(key) + " " + key.split('-')[0], // e.g. "Dic 2025"
+        income: monthlyGroups[key].income,
+        expense: monthlyGroups[key].expense,
+        balance: monthlyGroups[key].income - monthlyGroups[key].expense
+      }));
+      setBalanceData(tableRows);
 
     } catch (e) {
       console.error("Error processing charts:", e);
@@ -103,8 +130,11 @@ export default function GraficasScreen() {
   };
 
   const getMonthName = (yyyymm) => {
+    if (!yyyymm) return "";
     const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-    const [y, m] = yyyymm.split("-");
+    const parts = yyyymm.split("-");
+    if (parts.length < 2) return yyyymm;
+    const m = parts[1];
     const idx = parseInt(m, 10) - 1;
     return months[idx] || m;
   };
@@ -121,35 +151,29 @@ export default function GraficasScreen() {
   return (
     <View style={styles.container}>
 
-      <Text style={styles.title}>Gráficas</Text>
+      <Text style={styles.title}>Estadísticas</Text>
 
       <View style={styles.tabContainer}>
         <TouchableOpacity
           style={[styles.tab, vista === "categoria" && styles.tabActive]}
           onPress={() => setVista("categoria")}
         >
-          <Ionicons
-            name="pie-chart-outline"
-            size={18}
-            color={vista === "categoria" ? "#fff" : "#003f91"}
-          />
-          <Text style={[styles.tabText, vista === "categoria" && styles.tabTextActive]}>
-            Categoría
-          </Text>
+          <Ionicons name="pie-chart-outline" size={18} color={vista === "categoria" ? "#fff" : "#003f91"} />
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.tab, vista === "mes" && styles.tabActive]}
           onPress={() => setVista("mes")}
         >
-          <Ionicons
-            name="stats-chart-outline"
-            size={18}
-            color={vista === "mes" ? "#fff" : "#003f91"}
-          />
-          <Text style={[styles.tabText, vista === "mes" && styles.tabTextActive]}>
-            Mes
-          </Text>
+          <Ionicons name="stats-chart-outline" size={18} color={vista === "mes" ? "#fff" : "#003f91"} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tab, vista === "balance" && styles.tabActive]}
+          onPress={() => setVista("balance")}
+        >
+          <Ionicons name="list-outline" size={18} color={vista === "balance" ? "#fff" : "#003f91"} />
+          <Text style={[styles.tabText, vista === "balance" && styles.tabTextActive, { marginLeft: 5 }]}>Tabla</Text>
         </TouchableOpacity>
       </View>
 
@@ -224,6 +248,40 @@ export default function GraficasScreen() {
           </>
         )}
 
+        {vista === "balance" && (
+          <View style={styles.tableContainer}>
+            <Text style={styles.chartTitle}>Comparativa Mensual</Text>
+
+            <View style={styles.tableHeader}>
+              <Text style={[styles.tableResultHeader, { flex: 1.2, textAlign: 'left' }]}>Mes</Text>
+              <Text style={styles.tableResultHeader}>Ingreso</Text>
+              <Text style={styles.tableResultHeader}>Egreso</Text>
+              <Text style={styles.tableResultHeader}>Balance</Text>
+            </View>
+
+            {balanceData.length > 0 ? (
+              balanceData.map((row, index) => (
+                <View key={index} style={[styles.tableRow, index % 2 === 0 && styles.tableRowAlt]}>
+                  <Text style={[styles.tableCell, { flex: 1.2, textAlign: 'left', fontWeight: 'bold' }]}>
+                    {row.month}
+                  </Text>
+                  <Text style={[styles.tableCell, { color: '#2E7D32' }]}>
+                    +${row.income.toFixed(0)}
+                  </Text>
+                  <Text style={[styles.tableCell, { color: '#C62828' }]}>
+                    -${row.expense.toFixed(0)}
+                  </Text>
+                  <Text style={[styles.tableCell, { fontWeight: 'bold', color: row.balance >= 0 ? '#003f91' : '#D32F2F' }]}>
+                    ${row.balance.toFixed(0)}
+                  </Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.noData}>No hay transacciones registradas.</Text>
+            )}
+          </View>
+        )}
+
       </ScrollView>
     </View>
   );
@@ -240,7 +298,7 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     color: "#001A72",
     fontWeight: "bold",
     textAlign: "center",
@@ -255,18 +313,19 @@ const styles = StyleSheet.create({
   tab: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    justifyContent: 'center',
     paddingVertical: 10,
-    paddingHorizontal: 22,
-    marginHorizontal: 10,
+    paddingHorizontal: 20,
+    marginHorizontal: 5,
     borderRadius: 12,
     backgroundColor: "#e6eeff",
+    minWidth: 60
   },
   tabActive: {
     backgroundColor: "#003f91",
   },
   tabText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "600",
     color: "#003f91",
   },
@@ -289,14 +348,56 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     color: "#001A72",
-    marginBottom: 10,
-    alignSelf: 'flex-start',
-    marginLeft: 10,
+    marginBottom: 15,
+    alignSelf: 'center', // Centered title for table
     marginTop: 10
   },
   noData: {
     marginVertical: 20,
     color: '#666',
-    fontStyle: 'italic'
+    fontStyle: 'italic',
+    textAlign: 'center'
+  },
+
+  // Table Styles
+  tableContainer: {
+    marginHorizontal: 20,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 10,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    marginBottom: 20
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    borderBottomWidth: 2,
+    borderBottomColor: '#003f91',
+    paddingBottom: 10,
+    marginBottom: 5,
+  },
+  tableResultHeader: {
+    flex: 1,
+    fontWeight: 'bold',
+    fontSize: 14,
+    color: '#003f91',
+    textAlign: 'right'
+  },
+  tableRow: {
+    flexDirection: 'row',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  tableRowAlt: {
+    backgroundColor: '#f9fbff',
+  },
+  tableCell: {
+    flex: 1,
+    fontSize: 14,
+    color: '#333',
+    textAlign: 'right'
   }
 });

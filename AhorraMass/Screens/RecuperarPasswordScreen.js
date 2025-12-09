@@ -6,14 +6,17 @@ import {
   TouchableOpacity,
   Alert,
   StyleSheet,
+  ActivityIndicator
 } from "react-native";
 
 import AuthService from "../src/services/AuthService";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function RecuperarPasswordScreen({ navigation }) {
   const [correo, setCorreo] = useState("");
   const [pass1, setPass1] = useState("");
   const [pass2, setPass2] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const cambiarPassword = async () => {
     if (!correo || !pass1 || !pass2) {
@@ -26,26 +29,58 @@ export default function RecuperarPasswordScreen({ navigation }) {
       return;
     }
 
-    const existe = await AuthService.buscarCorreo(correo.trim().toLowerCase());
-
-    if (!existe || existe.length === 0) {
-      Alert.alert("Error", "Ese correo no está registrado.");
+    if (pass1.length < 6) {
+      Alert.alert("Error", "La contraseña debe tener al menos 6 caracteres.");
       return;
     }
 
-    await AuthService.actualizarPassword(correo.trim().toLowerCase(), pass1);
+    setLoading(true);
 
-    Alert.alert("Éxito", "Tu contraseña ha sido actualizada.");
-    navigation.goBack();
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      const correoLimpio = correo.trim().toLowerCase();
+      const existe = await AuthService.buscarCorreo(correoLimpio);
+
+      if (!existe) {
+        Alert.alert("Error", "Este correo no se encuentra registrado en nuestra base de datos.");
+        setLoading(false);
+        return;
+      }
+
+      const success = await AuthService.actualizarPassword(correoLimpio, pass1);
+
+      if (success) {
+        Alert.alert(
+          "¡Contraseña Restablecida!",
+          "Tu contraseña ha sido actualizada correctamente. Inicia sesión con tus nuevas credenciales.",
+          [{ text: "OK", onPress: () => navigation.goBack() }]
+        );
+      } else {
+        Alert.alert("Error", "Hubo un problema al actualizar. Intenta de nuevo.");
+      }
+
+    } catch (e) {
+      console.error(e);
+      Alert.alert("Error", "Ocurrió un error inesperado.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.titulo}>Recuperar contraseña</Text>
+      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <Ionicons name="arrow-back" size={24} color="#000" />
+      </TouchableOpacity>
+
+      <Text style={styles.titulo}>Recuperación</Text>
+      <Text style={styles.subtitulo}>Ingresa tu correo y define una nueva contraseña.</Text>
 
       <TextInput
         style={styles.input}
         placeholder="Correo registrado"
+        placeholderTextColor="#999"
         value={correo}
         onChangeText={setCorreo}
         autoCapitalize="none"
@@ -55,6 +90,7 @@ export default function RecuperarPasswordScreen({ navigation }) {
       <TextInput
         style={styles.input}
         placeholder="Nueva contraseña"
+        placeholderTextColor="#999"
         secureTextEntry
         value={pass1}
         onChangeText={setPass1}
@@ -63,18 +99,24 @@ export default function RecuperarPasswordScreen({ navigation }) {
       <TextInput
         style={styles.input}
         placeholder="Confirmar contraseña"
+        placeholderTextColor="#999"
         secureTextEntry
         value={pass2}
         onChangeText={setPass2}
       />
 
-      <TouchableOpacity style={styles.boton} onPress={cambiarPassword}>
-        <Text style={styles.botonTexto}>Guardar</Text>
+      <TouchableOpacity
+        style={[styles.boton, loading && { opacity: 0.7 }]}
+        onPress={cambiarPassword}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <Text style={styles.botonTexto}>Actualizar Contraseña</Text>
+        )}
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => navigation.goBack()}>
-        <Text style={styles.link}>Volver</Text>
-      </TouchableOpacity>
     </View>
   );
 }
@@ -83,37 +125,53 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: "center",
-    paddingTop: 40,
+    paddingTop: 60,
+    backgroundColor: '#fff',
+    paddingHorizontal: 25
+  },
+  backButton: {
+    alignSelf: 'flex-start',
+    marginBottom: 20
   },
   titulo: {
     fontSize: 28,
     fontWeight: "bold",
-    marginBottom: 25,
+    marginBottom: 5,
+    color: '#0f1344'
+  },
+  subtitulo: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 30,
+    textAlign: 'center'
   },
   input: {
-    width: "85%",
-    borderWidth: 1,
-    borderColor: "#aaa",
-    borderRadius: 8,
-    padding: 12,
+    width: "100%",
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    padding: 15,
     marginBottom: 15,
+    fontSize: 16
   },
   boton: {
     backgroundColor: "#0f1344",
-    padding: 12,
-    width: "85%",
-    borderRadius: 10,
+    paddingVertical: 15,
+    width: "100%",
+    borderRadius: 12,
     marginTop: 10,
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   botonTexto: {
-    textAlign: "center",
     color: "white",
     fontSize: 16,
-    fontWeight: "600",
-  },
-  link: {
-    marginTop: 15,
-    color: "blue",
-    fontSize: 16,
-  },
+    fontWeight: "bold",
+  }
 });

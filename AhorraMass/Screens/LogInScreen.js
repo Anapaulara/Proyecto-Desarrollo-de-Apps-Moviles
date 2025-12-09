@@ -40,10 +40,6 @@ export default function LogInScreen({ navigation }) {
     }
 
     await AuthService.setSession(
-      // Ensure we treat the result correctly. getAllAsync returns array. 
-      // result[0] is the user object.
-      // In AuthService.loginUsuario, we returned result[0] or null.
-      // So 'usuario' here is the User Object.
       usuario
     );
 
@@ -96,7 +92,6 @@ export default function LogInScreen({ navigation }) {
         <Button title="Iniciar sesión" color="#0f1344" onPress={iniciarSesion} />
       </View>
 
-      {/* CONECTAR A PANTALLA RECUPERAR */}
       <Pressable onPress={() => navigation.navigate("Recuperar")}>
         <Text style={styles.link}>¿No recuerdas tu contraseña?</Text>
       </Pressable>
